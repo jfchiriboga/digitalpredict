@@ -1,0 +1,638 @@
+<meta name="dash-one-writer">
+<style>
+  #dash-root { --dash-gutter: clamp(12px, 3vw, 32px); }
+  .ci { max-width: 1180px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  .ci h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
+  .ci h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .ci .lead { margin: 6px 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); max-width: 70ch; }
+  .ci .note { margin: 2px 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .ci .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-md); min-width: 0; }
+  .ci .grid2 { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); }
+  .ci .ctl { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: flex-end; }
+  .ci .ctl label { display: flex; flex-direction: column; gap: 4px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); min-width: 0; }
+  .ci select, .ci input[type=date], .ci input[type=search] { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg); background: var(--color-bg); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 6px 10px; max-width: 100%; }
+  .ci select { min-width: min(100%, 14rem); }
+  .ci button { font: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg); background: var(--color-bg); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 6px 12px; cursor: pointer; }
+  .ci button:hover { background: var(--color-panel); }
+  .ci :focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .ci .tools { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
+  .ci .chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 9.5rem; overflow: auto; min-height: 2rem; }
+  .ci .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 10px; }
+  .ci .chip[aria-pressed=true] { background: var(--color-bg); border-color: var(--color-fg); }
+  .ci .chip.is-main { border-style: dashed; cursor: default; }
+  .ci .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .ci .kpis { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+  .ci .kpi { display: flex; flex-direction: column; gap: 4px; }
+  .ci .kpi .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ci .kpi .val { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; }
+  .ci .chart { position: relative; min-height: 320px; }
+  .ci .chart.short { min-height: 120px; }
+  .ci .chart svg { display: block; width: 100%; height: auto; }
+  .ci .chart text { fill: var(--color-fg-muted); font-size: 11px; font-family: var(--font-anthropic-sans); }
+  .ci .chart .endlbl { fill: var(--color-fg); }
+  .ci .empty { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: 24px 0; text-align: center; }
+  .ci .fail { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: inherit; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .ci .fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+  .ci .brow { display: grid; grid-template-columns: minmax(7rem, 11rem) 1fr 4rem; gap: 10px; align-items: center; padding: 5px 0; font-size: var(--cds-font-size-caption); }
+  .ci .brow .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ci .brow .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ci .track { background: var(--color-bg); border-radius: 4px; height: 14px; overflow: hidden; display: flex; }
+  .ci .fill { height: 100%; border-radius: 0 3px 3px 0; min-width: 2px; }
+  .ci .seg { height: 100%; }
+  .ci .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ci .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .ci .tip { position: absolute; z-index: 5; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); max-width: 18rem; }
+  .ci .tip .t0 { color: var(--cds-text-secondary); }
+  .ci .tip .tl { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+  .ci .tip .tl b { font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
+  .ci .scroll { overflow-x: auto; }
+  .ci table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .ci th, .ci td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .ci th:first-child, .ci td:first-child { text-align: left; }
+  .ci th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
+  .ci tr.is-main td { background: var(--color-bg); font-weight: var(--cds-font-weight-medium); }
+  .ci .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); display: flex; flex-direction: column; gap: 4px; max-width: 80ch; }
+  .ci .foot p { margin: 0; }
+  @media (max-width: 520px) { .ci .brow { grid-template-columns: 6rem 1fr 3.4rem; } }
+</style>
+
+<div class="ci">
+  <header id="inicio">
+    <h1>Competencia de inversión digital</h1>
+    <p class="lead" data-draw="titular" data-source="marcas_cat">—</p>
+  </header>
+
+  <section class="card" id="filtros" aria-label="Filtros">
+    <div class="ctl">
+      <label>Categoría
+        <select id="f-cat" data-draw="sel_cat" data-source="categorias_lista" aria-label="Categoría"></select>
+      </label>
+      <label>Marca a analizar
+        <select id="f-marca" data-draw="sel_marca" data-source="marcas_cat" aria-label="Marca a analizar"></select>
+      </label>
+      <label>Plataforma
+        <select id="f-plat" aria-label="Plataforma">
+          <option value="">Todas</option>
+          <option value="Google Ads">Google Ads</option>
+          <option value="Meta">Meta</option>
+          <option value="TikTok">TikTok</option>
+          <option value="YouTube">YouTube</option>
+          <option value="Programatic">Programática</option>
+          <option value="X">X</option>
+        </select>
+      </label>
+      <label>Desde
+        <input id="f-desde" type="date" min="2026-01-01" max="2099-12-31" aria-label="Desde">
+      </label>
+      <button id="f-reset" type="button">Restablecer</button>
+    </div>
+    <div>
+      <h2>Competidores</h2>
+      <p class="note">Marcas de la misma categoría, ordenadas por inversión estimada. Toca una para sumarla o quitarla de la comparación.</p>
+    </div>
+    <div class="tools">
+      <input id="f-buscar" type="search" placeholder="Buscar marca" aria-label="Buscar marca">
+      <button id="f-top" type="button">Sugeridos (top 4)</button>
+      <button id="f-ninguno" type="button">Quitar todos</button>
+    </div>
+    <div class="chips" data-draw="chips" data-source="marcas_cat"></div>
+  </section>
+
+  <section class="kpis" id="resumen" aria-label="Resumen de la marca">
+    <div class="card kpi"><span class="lbl">Inversión estimada en el periodo</span><span class="val" data-draw="kpi_total" data-source="marcas_cat" data-field="total">—</span></div>
+    <div class="card kpi"><span class="lbl">Cuota de la categoría</span><span class="val" data-draw="kpi_cuota" data-source="marcas_cat" data-field="cuota">—</span></div>
+    <div class="card kpi"><span class="lbl">Posición por inversión</span><span class="val" data-draw="kpi_pos">—</span></div>
+    <div class="card kpi"><span class="lbl">Últimos 28 días vs 28 previos</span><span class="val" data-draw="kpi_var" data-source="marcas_cat" data-field="var28">—</span></div>
+  </section>
+
+  <section class="card" id="evolucion">
+    <div>
+      <h2>Inversión semanal frente a la competencia</h2>
+      <p class="note">Inversión digital estimada por semana completa, todas las plataformas.</p>
+    </div>
+    <div class="chart" data-draw="grafico_semanal" data-source="semanal"></div>
+  </section>
+
+  <section class="card" id="pronostico">
+    <div>
+      <h2>Estimado frente a pronóstico TimesFM</h2>
+      <p class="note" data-draw="nota_tfm" data-source="marcas_cat">—</p>
+    </div>
+    <div class="chart" data-draw="grafico_tfm" data-source="semanal"></div>
+    <div>
+      <h2>Error de TimesFM por marca</h2>
+      <p class="note">WAPE diario: suma de las diferencias absolutas día a día entre TimesFM y el estimado, dividida por la inversión estimada. Menor es mejor.</p>
+    </div>
+    <div class="chart short" data-draw="grafico_error" data-source="marcas_cat"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card" id="cuota">
+      <div>
+        <h2>Cuota de inversión en la categoría</h2>
+        <p class="note" data-draw="nota_cuota" data-source="marcas_cat">—</p>
+      </div>
+      <div class="chart short" data-draw="grafico_cuota" data-source="marcas_cat"></div>
+    </section>
+    <section class="card" id="plataformas">
+      <div>
+        <h2>Mezcla por plataforma</h2>
+        <p class="note">Cómo reparte cada marca su inversión estimada entre plataformas.</p>
+      </div>
+      <div class="chart short" data-draw="grafico_mix" data-source="marcas_cat"></div>
+    </section>
+  </div>
+
+  <section class="card" id="comparativo">
+    <div>
+      <h2>Comparativo de marcas</h2>
+      <p class="note">La marca analizada aparece resaltada primero, luego los competidores elegidos.</p>
+    </div>
+    <div class="scroll">
+      <table data-source="marcas_cat" data-row-key="marca">
+        <thead>
+          <tr>
+            <th data-field="marca">Marca</th>
+            <th data-field="total">Inversión estimada</th>
+            <th data-field="cuota">Cuota</th>
+            <th data-field="ult28">Últimos 28 días</th>
+            <th data-field="var28">Var. vs 28 previos</th>
+            <th data-field="total_tfm">TimesFM</th>
+            <th data-field="dif_tfm">TimesFM vs estimado</th>
+            <th data-field="wape">Error TimesFM (WAPE)</th>
+            <th data-field="plataforma_top">Plataforma principal</th>
+          </tr>
+        </thead>
+        <tbody data-draw="tabla"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>Datos hasta <b data-draw="hasta" data-source="serie">—</b>. Fuente: tabla mart_digital_predict_industria, consultada en vivo con Windsor.</p>
+    <p>Inversión estimada: columna digital_predict, estimación diaria del modelo por marca y plataforma, en la unidad de la tabla (se asume USD). TimesFM: columna timesfm, la serie del modelo de pronóstico para las mismas fechas; se compara día a día con la estimada y no extiende el calendario hacia adelante. WAPE: error absoluto ponderado; se calcula sobre el total diario de la marca (o de la plataforma elegida), de modo que no se compensan días por encima con días por debajo. Un 20% significa que, en promedio, TimesFM se aparta un 20% del estimado cada día. Con una plataforma elegida, todas las cifras y la cuota se calculan solo sobre esa plataforma. La columna inversion_real no trae valores, por eso no se usa. Cuota: parte de la inversión de la marca sobre el total de su categoría en el periodo. Posición: orden por inversión dentro de la categoría.</p>
+  </footer>
+</div>
+
+<script>
+  // Estado compartido y utilidades de formato
+  const nfUsd = new Intl.NumberFormat('es', { notation: 'compact', maximumFractionDigits: 1 });
+  const nfPct = new Intl.NumberFormat('es', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const nfInt = new Intl.NumberFormat('es', { maximumFractionDigits: 0 });
+  const nfDate = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const nfDateY = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const PLATS = [['google', 'Google Ads'], ['meta', 'Meta'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['programatic', 'Programática'], ['x', 'X']];
+  window.CMP = {
+    usd: (v) => '$' + nfUsd.format(v || 0),
+    pct: (v) => (v == null ? '—' : nfPct.format(v)),
+    signed: (v) => (v == null ? '—' : (v > 0 ? '▲ ' : v < 0 ? '▼ ' : '') + nfPct.format(Math.abs(v))),
+    PLATS, nfDate, nfDateY,
+    color(i) { return dash.colors[i % dash.colors.length]; },
+    state() {
+      const g = dash.data('marcas_cat');
+      if (g.status !== 'ok' || !g.data.length) return null;
+      const rows = g.data, by = new Map(rows.map((r) => [r.marca, r]));
+      const p = dash.params();
+      const marca = by.has(p.marca) ? p.marca : rows[0].marca;
+      const comps = Array.isArray(p.competidores)
+        ? p.competidores.filter((n) => by.has(n) && n !== marca)
+        : rows.filter((r) => r.marca !== marca).slice(0, 4).map((r) => r.marca);
+      return { rows, by, marca, comps, list: [marca, ...comps], categoria: p.categoria, plataforma: (p.plataforma || '') === 'Programatic' ? 'Programática' : p.plataforma || '' };
+    },
+    idle(el, g) {
+      el.replaceChildren();
+      el.classList.toggle('dash-skeleton', g.status === 'loading');
+      if (g.status === 'error' || g.status === 'connect' || g.status === 'declined' || g.status === 'missing') {
+        const d = document.createElement('div'); d.className = 'fail'; d.textContent = 'No se pudo cargar'; el.appendChild(d);
+      }
+    },
+    empty(el, text) { el.replaceChildren(); el.classList.remove('dash-skeleton'); const d = document.createElement('div'); d.className = 'empty'; d.textContent = text; el.appendChild(d); },
+    tipEl(el) {
+      let t = el.querySelector(':scope > .tip');
+      if (!t) { t = document.createElement('div'); t.className = 'tip'; t.hidden = true; el.appendChild(t); }
+      return t;
+    },
+    showTip(el, head, lines, ev) {
+      const t = CMP.tipEl(el); t.replaceChildren();
+      const h = document.createElement('div'); h.className = 't0'; h.textContent = head; t.appendChild(h);
+      for (const [color, name, val] of lines) {
+        const row = document.createElement('div'); row.className = 'tl';
+        const left = document.createElement('span'); left.style.display = 'inline-flex'; left.style.gap = '6px'; left.style.alignItems = 'center';
+        if (color) { const s = document.createElement('span'); s.className = 'dot'; s.style.background = color; left.appendChild(s); }
+        left.appendChild(document.createTextNode(name));
+        const b = document.createElement('b'); b.textContent = val;
+        row.append(left, b); t.appendChild(row);
+      }
+      t.hidden = false;
+      const box = el.getBoundingClientRect();
+      let x = ev.clientX - box.left + 14, y = ev.clientY - box.top + 14;
+      if (x + t.offsetWidth > box.width) x = ev.clientX - box.left - t.offsetWidth - 14;
+      t.style.left = Math.max(0, x) + 'px'; t.style.top = Math.max(0, y) + 'px';
+    },
+    hideTip(el) { const t = el.querySelector(':scope > .tip'); if (t) t.hidden = true; },
+  };
+</script>
+
+<script>
+  // Cómo se convierte la respuesta de Windsor en filas tipadas
+  dash.loader('serie', {
+    description: 'Respuesta de Windsor como filas, con fechas y montos tipados.',
+    fn: async ({ answer, call, args }) => {
+      const unwrap = (x) => {
+        if (typeof x === 'string') { try { x = JSON.parse(x); } catch (e) { throw new Error(x.slice(0, 200)); } }
+        if (Array.isArray(x) && x[0] && typeof x[0].text === 'string') return unwrap(x[0].text);
+        if (x && Array.isArray(x.content) && x.content[0] && typeof x.content[0].text === 'string') return unwrap(x.content[0].text);
+        return x;
+      };
+      let r = unwrap(answer);
+      for (let i = 0; i < 5 && r && r.status === 'pending'; i++) {
+        await new Promise((s) => setTimeout(s, (r.poll_after_seconds || 10) * 1000));
+        r = unwrap(await call('get_data', args));
+      }
+      if (r && r.error) throw new Error(String(r.error));
+      const rows = Array.isArray(r) ? r : r && r.data;
+      if (!Array.isArray(rows)) throw new Error('Respuesta sin filas. Claves: ' + Object.keys(r || {}).join(', '));
+      const n = (v) => { const x = parseFloat(v); return isFinite(x) ? x : null; };
+      return rows.map((o) => ({ fecha: String(o.fecha).slice(0, 10), categorias: o.categorias, marcas: o.marcas, plataformas: o.plataformas, digital_predict: n(o.digital_predict), timesfm: n(o.timesfm) }));
+    },
+  });
+  dash.loader('cats', {
+    description: 'Respuesta de Windsor como filas con la categoría.',
+    fn: async ({ answer, call, args }) => {
+      const unwrap = (x) => {
+        if (typeof x === 'string') { try { x = JSON.parse(x); } catch (e) { throw new Error(x.slice(0, 200)); } }
+        if (Array.isArray(x) && x[0] && typeof x[0].text === 'string') return unwrap(x[0].text);
+        if (x && Array.isArray(x.content) && x.content[0] && typeof x.content[0].text === 'string') return unwrap(x.content[0].text);
+        return x;
+      };
+      let r = unwrap(answer);
+      for (let i = 0; i < 5 && r && r.status === 'pending'; i++) {
+        await new Promise((s) => setTimeout(s, (r.poll_after_seconds || 10) * 1000));
+        r = unwrap(await call('get_data', args));
+      }
+      if (r && r.error) throw new Error(String(r.error));
+      const rows = Array.isArray(r) ? r : r && r.data;
+      if (!Array.isArray(rows)) throw new Error('Respuesta sin filas. Claves: ' + Object.keys(r || {}).join(', '));
+      return rows.map((o) => ({ categoria: o.categorias }));
+    },
+  });
+</script>
+
+<script>
+  // Cálculos sobre las consultas en vivo
+  dash.calc('categorias_lista', {
+    inputs: ['cats'],
+    title: 'Categorías con actividad reciente',
+    description: 'Categorías distintas con inversión en los últimos 30 días.',
+    fn: (cats) => {
+      const m = new Map();
+      for (const r of cats) if (r.categoria) m.set(r.categoria, (m.get(r.categoria) || 0) + 1);
+      return [...m.entries()].map(([categoria, filas]) => ({ categoria, filas })).sort((a, b) => a.categoria.localeCompare(b.categoria, 'es'));
+    },
+  });
+
+  dash.calc('marcas_cat', {
+    inputs: ['serie'],
+    title: 'Resumen por marca',
+    description: 'Inversión estimada total, pronóstico TimesFM, error diario de TimesFM (WAPE), cuota, posición, últimos 28 días y mezcla por plataforma de cada marca de la categoría.',
+    fn: (serie) => {
+      const num = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
+      let maxd = '';
+      for (const r of serie) if (r.fecha > maxd) maxd = r.fecha;
+      if (!maxd) return [];
+      const t = Date.parse(maxd + 'T00:00:00Z'), day = 86400000;
+      const d28 = new Date(t - 27 * day).toISOString().slice(0, 10);
+      const d56 = new Date(t - 55 * day).toISOString().slice(0, 10);
+      const key = { 'Google Ads': 'google', 'Meta': 'meta', 'TikTok': 'tiktok', 'YouTube': 'youtube', 'Programatic': 'programatic', 'X': 'x' };
+      const label = { google: 'Google Ads', meta: 'Meta', tiktok: 'TikTok', youtube: 'YouTube', programatic: 'Programática', x: 'X' };
+      const m = new Map(), days = new Map();
+      let total = 0;
+      for (const r of serie) {
+        let o = m.get(r.marcas);
+        if (!o) { o = { marca: r.marcas, total: 0, total_tfm: 0, err: 0, ult28: 0, prev28: 0, google: 0, meta: 0, tiktok: 0, youtube: 0, programatic: 0, x: 0 }; m.set(r.marcas, o); }
+        const v = num(r.digital_predict);
+        o.total += v; total += v; o.total_tfm += num(r.timesfm);
+        const dk = r.marcas + '|' + r.fecha;
+        let dd = days.get(dk);
+        if (!dd) { dd = { m: r.marcas, p: 0, t: 0 }; days.set(dk, dd); }
+        dd.p += v; dd.t += num(r.timesfm);
+        if (r.fecha >= d28) o.ult28 += v; else if (r.fecha >= d56) o.prev28 += v;
+        const k = key[r.plataformas]; if (k) o[k] += v;
+      }
+      for (const dd of days.values()) m.get(dd.m).err += Math.abs(dd.t - dd.p);
+      return [...m.values()].sort((a, b) => b.total - a.total).map((o, i) => {
+        let top = 'google';
+        for (const k of Object.keys(label)) if (o[k] > o[top]) top = k;
+        return { ...o, rank: i + 1, cuota: total ? o.total / total : 0, dif_tfm: o.total ? o.total_tfm / o.total - 1 : null, wape: o.total ? o.err / o.total : null, var28: o.prev28 ? o.ult28 / o.prev28 - 1 : null, plataforma_top: o.total ? label[top] : '—' };
+      });
+    },
+  });
+
+  dash.calc('semanal', {
+    inputs: ['serie'],
+    title: 'Inversión semanal por marca',
+    description: 'Inversión estimada y pronóstico TimesFM por marca y semana (lunes a domingo). Marca como completa la semana con los 7 días dentro del rango consultado.',
+    fn: (serie) => {
+      let mind = '9999', maxd = '';
+      for (const r of serie) { if (r.fecha < mind) mind = r.fecha; if (r.fecha > maxd) maxd = r.fecha; }
+      const day = 86400000, m = new Map();
+      for (const r of serie) {
+        const d = new Date(r.fecha + 'T00:00:00Z');
+        const w = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * day).toISOString().slice(0, 10);
+        const k = r.marcas + '|' + w;
+        let o = m.get(k);
+        if (!o) {
+          const end = new Date(Date.parse(w + 'T00:00:00Z') + 6 * day).toISOString().slice(0, 10);
+          o = { marca: r.marcas, semana: w, inversion: 0, pronostico: 0, completa: w >= mind && end <= maxd };
+          m.set(k, o);
+        }
+        o.inversion += typeof r.digital_predict === 'number' && isFinite(r.digital_predict) ? r.digital_predict : 0;
+        o.pronostico += typeof r.timesfm === 'number' && isFinite(r.timesfm) ? r.timesfm : 0;
+      }
+      return [...m.values()].sort((a, b) => (a.semana < b.semana ? -1 : a.semana > b.semana ? 1 : 0));
+    },
+  });
+</script>
+
+<script>
+  // Controles
+  const $ = (id) => document.getElementById(id);
+  const desde = $('f-desde'), buscar = $('f-buscar'), plat = $('f-plat');
+  plat.addEventListener('change', () => dash.setParams({ plataforma: plat.value, marca: null, competidores: null }));
+  const showDesde = () => { desde.value = dash.params().desde ?? ''; };
+  desde.addEventListener('change', () => { if (desde.value && desde.validity.valid) dash.setParams({ desde: desde.value }); });
+  desde.addEventListener('blur', showDesde);
+  $('f-reset').addEventListener('click', () => { dash.resetParams(); buscar.value = ''; });
+  $('f-top').addEventListener('click', () => dash.setParams({ competidores: null }));
+  $('f-ninguno').addEventListener('click', () => dash.setParams({ competidores: [] }));
+  const applySearch = () => {
+    const q = buscar.value.trim().toLowerCase();
+    for (const c of document.querySelectorAll('.ci .chip')) c.hidden = !!q && !c.dataset.name.toLowerCase().includes(q);
+  };
+  buscar.addEventListener('input', applySearch);
+  document.querySelector('[data-draw="chips"]').addEventListener('click', (ev) => {
+    const b = ev.target.closest('.chip'); if (!b || b.classList.contains('is-main')) return;
+    const st = CMP.state(); if (!st) return;
+    const n = b.dataset.name;
+    dash.setParams({ competidores: st.comps.includes(n) ? st.comps.filter((x) => x !== n) : [...st.comps, n] });
+  });
+  dash.onData(() => { if (desde !== document.activeElement) showDesde(); plat.value = dash.params().plataforma ?? ''; });
+
+  dash.draw('sel_cat', (sel) => {
+    const g = dash.data('categorias_lista');
+    const actual = dash.params().categoria;
+    const items = g.status === 'ok' ? g.data.map((r) => r.categoria) : [];
+    if (actual && !items.includes(actual)) items.unshift(actual);
+    sel.replaceChildren(...items.map((c) => new Option(c, c)));
+    sel.value = actual ?? '';
+    sel.onchange = () => dash.setParams({ categoria: sel.value, marca: null, competidores: null });
+  });
+  dash.draw('sel_marca', (sel) => {
+    const st = CMP.state();
+    sel.replaceChildren(...(st ? st.rows.map((r) => new Option(r.marca, r.marca)) : []));
+    if (st) sel.value = st.marca;
+    sel.onchange = () => dash.setParams({ marca: sel.value, competidores: null });
+  });
+  dash.draw('chips', (box) => {
+    const st = CMP.state(); box.replaceChildren();
+    if (!st) return;
+    for (const r of st.rows) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.name = r.marca;
+      const isMain = r.marca === st.marca, idx = st.comps.indexOf(r.marca);
+      b.setAttribute('aria-pressed', String(isMain || idx >= 0));
+      if (isMain) b.classList.add('is-main');
+      if (isMain || idx >= 0) { const d = document.createElement('span'); d.className = 'dot'; d.style.background = CMP.color(isMain ? 0 : idx + 1); b.appendChild(d); }
+      b.appendChild(document.createTextNode(r.marca + (isMain ? ' (analizada)' : '')));
+      box.appendChild(b);
+    }
+    applySearch();
+  });
+</script>
+
+<script>
+  // Titular, indicadores y pie
+  dash.draw('titular', (el) => {
+    const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
+    const r = st.by.get(st.marca);
+    let t = `${r.marca} concentra ${CMP.pct(r.cuota)} de la inversión digital estimada de ${st.categoria}${st.plataforma ? ' en ' + st.plataforma : ''} y ocupa el puesto ${r.rank} de ${st.rows.length}.`;
+    if (st.comps.length) {
+      const top = st.comps.map((n) => st.by.get(n)).sort((a, b) => b.total - a.total)[0];
+      t += top.total > r.total ? ` Entre los competidores elegidos, ${top.marca} la supera por ${CMP.usd(top.total - r.total)}.` : ` Supera a todos los competidores elegidos.`;
+    }
+    el.textContent = t;
+  });
+  const kpi = (name, field, fmt) => dash.draw(name, (el) => {
+    const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
+    el.dataset.where = 'marca=' + encodeURIComponent(st.marca);
+    el.textContent = fmt(st.by.get(st.marca)[field]);
+  });
+  kpi('kpi_total', 'total', CMP.usd);
+  kpi('kpi_cuota', 'cuota', CMP.pct);
+  kpi('kpi_var', 'var28', CMP.signed);
+  dash.draw('kpi_pos', (el) => {
+    const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
+    el.textContent = `${st.by.get(st.marca).rank} de ${st.rows.length}`;
+  });
+  dash.draw('hasta', (el) => {
+    const g = dash.data('serie'); if (g.status !== 'ok' || !g.data.length) { el.textContent = '—'; return; }
+    let m = ''; for (const r of g.data) if (r.fecha > m) m = r.fecha;
+    el.textContent = CMP.nfDateY.format(new Date(m + 'T00:00:00Z'));
+  });
+  dash.draw('nota_cuota', (el) => {
+    const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
+    const rest = Math.max(0, 1 - st.list.reduce((s, n) => s + st.by.get(n).cuota, 0));
+    el.textContent = `Las marcas elegidas suman ${CMP.pct(1 - rest)}. El resto de la categoría, ${st.rows.length - st.list.length} marcas, suma ${CMP.pct(rest)}.`;
+  });
+</script>
+
+<script>
+  // Gráfico de líneas semanal
+  dash.draw('grafico_semanal', (el) => {
+    const st = CMP.state(), g = dash.data('semanal');
+    if (!st || g.status !== 'ok') { CMP.idle(el, st ? g : dash.data('marcas_cat')); return; }
+    el.classList.remove('dash-skeleton');
+    const sem = g.data.filter((r) => r.completa && st.list.includes(r.marca));
+    const weeks = [...new Set(g.data.filter((r) => r.completa).map((r) => r.semana))].sort();
+    if (weeks.length < 2) { CMP.empty(el, 'Hacen falta al menos dos semanas completas. Amplía el rango en Desde.'); return; }
+    const W = Math.max(el.clientWidth, 280), H = 320, narrow = W < 560;
+    const m = { l: 52, r: narrow ? 8 : 132, t: 12, b: 28 };
+    const series = st.list.map((n, i) => {
+      const pts = new Map(sem.filter((r) => r.marca === n).map((r) => [r.semana, r.inversion]));
+      return { n, i, pts: weeks.map((w) => ({ w, d: new Date(w + 'T00:00:00Z'), v: pts.get(w) || 0 })) };
+    });
+    const ymax = d3.max(series, (s) => d3.max(s.pts, (p) => p.v)) || 1;
+    const x = d3.scaleUtc([new Date(weeks[0] + 'T00:00:00Z'), new Date(weeks[weeks.length - 1] + 'T00:00:00Z')], [m.l, W - m.r]);
+    const y = d3.scaleLinear([0, ymax * 1.05], [H - m.b, m.t]).nice();
+    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').selectAll('line').data(y.ticks(5)).join('line')
+      .attr('x1', m.l).attr('x2', W - m.r).attr('y1', (d) => y(d)).attr('y2', (d) => y(d)).attr('stroke', 'var(--cds-chart-grid)');
+    const ya = svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((d) => CMP.usd(d)).tickSize(0).tickPadding(8));
+    const xa = svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat((d) => CMP.nfDate.format(d)).tickSizeOuter(0));
+    for (const a of [ya, xa]) { a.attr('font-size', null).attr('font-family', null); a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.selectAll('text').attr('fill', 'var(--color-fg-muted)'); }
+    ya.select('.domain').remove();
+    const line = d3.line().x((p) => x(p.d)).y((p) => y(p.v));
+    for (const s of [...series].reverse()) {
+      svg.append('path').datum(s.pts).attr('fill', 'none').attr('stroke', CMP.color(s.i)).attr('stroke-width', s.i === 0 ? 2.5 : 1.75)
+        .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round').attr('opacity', s.i === 0 ? 1 : 0.9).attr('d', line);
+    }
+    if (!narrow) {
+      const lab = series.map((s) => ({ s, y: y(s.pts[s.pts.length - 1].v) })).sort((a, b) => a.y - b.y);
+      for (let k = 1; k < lab.length; k++) if (lab[k].y - lab[k - 1].y < 13) lab[k].y = lab[k - 1].y + 13;
+      svg.append('g').selectAll('text').data(lab).join('text').attr('class', 'endlbl').attr('x', W - m.r + 8).attr('y', (d) => d.y + 4)
+        .attr('fill', (d) => CMP.color(d.s.i)).style('fill', (d) => CMP.color(d.s.i)).attr('font-weight', (d) => (d.s.i === 0 ? 600 : 400))
+        .text((d) => (d.s.n.length > 18 ? d.s.n.slice(0, 17) + '…' : d.s.n));
+    }
+    const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).attr('stroke', 'var(--cds-chart-reference)').attr('visibility', 'hidden');
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const px = d3.pointer(ev)[0], k = d3.bisector((w) => new Date(w + 'T00:00:00Z')).center(weeks, x.invert(px));
+        rule.attr('x1', x(new Date(weeks[k] + 'T00:00:00Z'))).attr('x2', x(new Date(weeks[k] + 'T00:00:00Z'))).attr('visibility', 'visible');
+        const lines = series.map((s) => [CMP.color(s.i), s.n, CMP.usd(s.pts[k].v)]).sort((a, b) => 0);
+        CMP.showTip(el, 'Semana del ' + CMP.nfDate.format(new Date(weeks[k] + 'T00:00:00Z')), lines, ev);
+      })
+      .on('pointerleave', () => { rule.attr('visibility', 'hidden'); CMP.hideTip(el); });
+    el.replaceChildren(svg.node());
+  });
+</script>
+
+<script>
+  // Cuota, mezcla por plataforma y tabla
+
+  dash.draw('grafico_error', (el) => {
+    const st = CMP.state();
+    if (!st) { CMP.idle(el, dash.data('marcas_cat')); return; }
+    el.classList.remove('dash-skeleton'); el.replaceChildren();
+    const max = Math.max(...st.list.map((n) => st.by.get(n).wape || 0), 0.0001);
+    st.list.forEach((n, i) => {
+      const r = st.by.get(n);
+      const row = document.createElement('div'); row.className = 'brow';
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = n; nm.style.fontWeight = i === 0 ? '600' : '400';
+      const tr = document.createElement('div'); tr.className = 'track';
+      const f = document.createElement('div'); f.className = 'fill'; f.style.width = ((r.wape || 0) / max) * 100 + '%'; f.style.background = CMP.color(i);
+      tr.appendChild(f);
+      const v = document.createElement('span'); v.className = 'num'; v.textContent = CMP.pct(r.wape);
+      row.append(nm, tr, v);
+      row.addEventListener('pointermove', (ev) => CMP.showTip(el, n, [[CMP.color(i), 'Error diario (WAPE)', CMP.pct(r.wape)], [null, 'Estimado', CMP.usd(r.total)], [null, 'TimesFM', CMP.usd(r.total_tfm)], [null, 'TimesFM vs estimado', CMP.signed(r.dif_tfm)]], ev));
+      row.addEventListener('pointerleave', () => CMP.hideTip(el));
+      el.appendChild(row);
+    });
+  });
+
+  dash.draw('nota_tfm', (el) => {
+    const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
+    const r = st.by.get(st.marca), d = r.dif_tfm;
+    const cmp = d == null ? '' : Math.abs(d) < 0.005 ? ' Las dos series coinciden.' : ` TimesFM queda ${CMP.pct(Math.abs(d))} ${d > 0 ? 'por encima' : 'por debajo'} de lo estimado.`;
+    el.textContent = `${r.marca}: Digital Predict suma ${CMP.usd(r.total)} y TimesFM ${CMP.usd(r.total_tfm)} en el periodo.${cmp} El error diario (WAPE) es ${CMP.pct(r.wape)}.`;
+  });
+
+  dash.draw('grafico_tfm', (el) => {
+    const st = CMP.state(), g = dash.data('semanal');
+    if (!st || g.status !== 'ok') { CMP.idle(el, st ? g : dash.data('marcas_cat')); return; }
+    el.classList.remove('dash-skeleton');
+    const all = g.data.filter((r) => r.completa);
+    const weeks = [...new Set(all.map((r) => r.semana))].sort();
+    if (weeks.length < 2) { CMP.empty(el, 'Hacen falta al menos dos semanas completas. Amplía el rango en Desde.'); return; }
+    const mine = new Map(all.filter((r) => r.marca === st.marca).map((r) => [r.semana, r]));
+    const W = Math.max(el.clientWidth, 280), H = 300, narrow = W < 560;
+    const m = { l: 52, r: narrow ? 8 : 112, t: 12, b: 28 };
+    const series = [
+      { n: 'Estimado', key: 'inversion', color: CMP.color(0), dash: null },
+      { n: 'TimesFM', key: 'pronostico', color: CMP.color(2), dash: '6 4' },
+    ].map((s) => ({ ...s, pts: weeks.map((w) => ({ d: new Date(w + 'T00:00:00Z'), w, v: (mine.get(w) || {})[s.key] || 0 })) }));
+    const ymax = d3.max(series, (s) => d3.max(s.pts, (p) => p.v)) || 1;
+    const x = d3.scaleUtc([series[0].pts[0].d, series[0].pts[weeks.length - 1].d], [m.l, W - m.r]);
+    const y = d3.scaleLinear([0, ymax * 1.05], [H - m.b, m.t]).nice();
+    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').selectAll('line').data(y.ticks(5)).join('line')
+      .attr('x1', m.l).attr('x2', W - m.r).attr('y1', (d) => y(d)).attr('y2', (d) => y(d)).attr('stroke', 'var(--cds-chart-grid)');
+    const ya = svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((d) => CMP.usd(d)).tickSize(0).tickPadding(8));
+    const xa = svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat((d) => CMP.nfDate.format(d)).tickSizeOuter(0));
+    for (const a of [ya, xa]) { a.attr('font-size', null).attr('font-family', null); a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.selectAll('text').attr('fill', 'var(--color-fg-muted)'); }
+    ya.select('.domain').remove();
+    const line = d3.line().x((p) => x(p.d)).y((p) => y(p.v));
+    for (const s of series) {
+      svg.append('path').datum(s.pts).attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', 2.25)
+        .attr('stroke-linecap', s.dash ? 'butt' : 'round').attr('stroke-linejoin', 'round').attr('stroke-dasharray', s.dash).attr('d', line);
+    }
+    if (!narrow) {
+      const lab = series.map((s) => ({ s, y: y(s.pts[s.pts.length - 1].v) })).sort((a, b) => a.y - b.y);
+      if (lab[1].y - lab[0].y < 13) lab[1].y = lab[0].y + 13;
+      svg.append('g').selectAll('text').data(lab).join('text').attr('class', 'endlbl').attr('x', W - m.r + 8).attr('y', (d) => d.y + 4)
+        .style('fill', (d) => d.s.color).text((d) => d.s.n);
+    }
+    const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).attr('stroke', 'var(--cds-chart-reference)').attr('visibility', 'hidden');
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const k = d3.bisector((w) => new Date(w + 'T00:00:00Z')).center(weeks, x.invert(d3.pointer(ev)[0]));
+        const px = x(new Date(weeks[k] + 'T00:00:00Z'));
+        rule.attr('x1', px).attr('x2', px).attr('visibility', 'visible');
+        const a = series[0].pts[k].v, b = series[1].pts[k].v;
+        const lines = [[series[0].color, 'Estimado', CMP.usd(a)], [series[1].color, 'TimesFM', CMP.usd(b)]];
+        if (a) lines.push([null, 'TimesFM vs estimado', CMP.signed(b / a - 1)]);
+        CMP.showTip(el, st.marca + ' · semana del ' + CMP.nfDate.format(new Date(weeks[k] + 'T00:00:00Z')), lines, ev);
+      })
+      .on('pointerleave', () => { rule.attr('visibility', 'hidden'); CMP.hideTip(el); });
+    el.replaceChildren(svg.node());
+  });
+  dash.draw('grafico_cuota', (el) => {
+    const st = CMP.state();
+    if (!st) { CMP.idle(el, dash.data('marcas_cat')); return; }
+    el.classList.remove('dash-skeleton'); el.replaceChildren();
+    const max = Math.max(...st.list.map((n) => st.by.get(n).cuota), 0.0001);
+    st.list.forEach((n, i) => {
+      const r = st.by.get(n);
+      const row = document.createElement('div'); row.className = 'brow';
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = n; nm.style.fontWeight = i === 0 ? '600' : '400';
+      const tr = document.createElement('div'); tr.className = 'track';
+      const f = document.createElement('div'); f.className = 'fill'; f.style.width = (r.cuota / max) * 100 + '%'; f.style.background = CMP.color(i);
+      tr.appendChild(f);
+      const v = document.createElement('span'); v.className = 'num'; v.textContent = CMP.pct(r.cuota);
+      row.append(nm, tr, v);
+      row.addEventListener('pointermove', (ev) => CMP.showTip(el, n, [[CMP.color(i), 'Inversión estimada', CMP.usd(r.total)], [null, 'Cuota', CMP.pct(r.cuota)], [null, 'Posición', r.rank + ' de ' + st.rows.length]], ev));
+      row.addEventListener('pointerleave', () => CMP.hideTip(el));
+      el.appendChild(row);
+    });
+  });
+
+  dash.draw('grafico_mix', (el) => {
+    const st = CMP.state();
+    if (!st) { CMP.idle(el, dash.data('marcas_cat')); return; }
+    el.classList.remove('dash-skeleton'); el.replaceChildren();
+    const lg = document.createElement('div'); lg.className = 'legend';
+    CMP.PLATS.forEach(([, label], k) => {
+      const s = document.createElement('span'); const d = document.createElement('i'); d.className = 'dot'; d.style.background = CMP.color(k);
+      s.append(d, document.createTextNode(label)); lg.appendChild(s);
+    });
+    el.appendChild(lg);
+    st.list.forEach((n, i) => {
+      const r = st.by.get(n);
+      const row = document.createElement('div'); row.className = 'brow'; row.style.gridTemplateColumns = '';
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = n; nm.style.fontWeight = i === 0 ? '600' : '400';
+      const tr = document.createElement('div'); tr.className = 'track';
+      CMP.PLATS.forEach(([k, label], j) => {
+        const share = r.total ? r[k] / r.total : 0;
+        const s = document.createElement('div'); s.className = 'seg'; s.style.width = share * 100 + '%'; s.style.background = CMP.color(j);
+        s.addEventListener('pointermove', (ev) => CMP.showTip(el, n, [[CMP.color(j), label, CMP.pct(share)], [null, 'Inversión estimada', CMP.usd(r[k])]], ev));
+        s.addEventListener('pointerleave', () => CMP.hideTip(el));
+        tr.appendChild(s);
+      });
+      const v = document.createElement('span'); v.className = 'num'; v.textContent = r.plataforma_top;
+      row.append(nm, tr, v);
+      el.appendChild(row);
+    });
+  });
+
+  dash.draw('tabla', (tb) => {
+    const st = CMP.state(); tb.replaceChildren();
+    if (!st) return;
+    for (const n of st.list) {
+      const r = st.by.get(n);
+      const tr = document.createElement('tr'); tr.dataset.key = r.marca;
+      if (n === st.marca) tr.className = 'is-main';
+      for (const t of [r.marca, CMP.usd(r.total), CMP.pct(r.cuota), CMP.usd(r.ult28), CMP.signed(r.var28), CMP.usd(r.total_tfm), CMP.signed(r.dif_tfm), CMP.pct(r.wape), r.plataforma_top]) {
+        const td = document.createElement('td'); td.textContent = t; tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    }
+  });
+</script>

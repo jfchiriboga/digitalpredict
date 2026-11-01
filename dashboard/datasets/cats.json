@@ -1,0 +1,22 @@
+{
+  "title": "Categorías recientes",
+  "description": "Categorías con inversión registrada en los últimos 30 días. Reads infomedia_marts.mart_digital_predict_industria vía Windsor.",
+  "source": {
+    "kind": "query",
+    "connector": "Windsor.ai",
+    "tool": "get_data",
+    "args": {
+      "connector": "mysql",
+      "accounts": [
+        "reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria"
+      ],
+      "fields": [
+        "categorias"
+      ],
+      "date_preset": "last_30d",
+      "date_filters": {
+        "General": "fecha"
+      }
+    }
+  }
+}
