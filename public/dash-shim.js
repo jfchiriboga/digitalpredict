@@ -2,7 +2,7 @@
    Provee: dash.data, dash.calc, dash.draw, dash.onData, dash.params/setParams/resetParams, dash.colors. */
 (function () {
   'use strict';
-  var DEFAULTS = { categoria: 'BANCOS', desde: '2026-01-01', plataforma: '' };
+  var DEFAULTS = { categoria: 'BANCOS', desde: '2026-01-01', plataforma: '', ver: 'inicio' };
   var JSON_KEYS = { marca: 1, competidores: 1 };
   var params = Object.assign({}, DEFAULTS);
   var listeners = [], draws = new Map(), calcs = new Map(), scheduled = false;
@@ -31,12 +31,18 @@
   function qs(o) { return Object.keys(o).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(o[k]); }).join('&'); }
 
   var SOURCES = {
+    marcas: {
+      key: function () { return 'marcas'; },
+      url: function () { return '/api/data?tipo=marcas'; },
+      parse: function (j) { return (j.marcas || []).map(function (p) { return { marca: p[0], categoria: p[1] }; }); },
+    },
     cats: {
       key: function () { return 'cats'; },
       url: function () { return '/api/data?tipo=cats'; },
       parse: function (j) { return (j.cats || []).map(function (c) { return { categoria: c }; }); },
     },
     serie: {
+      enabled: function () { return params.ver === 'analisis'; },
       key: function () { return [params.categoria, params.desde, params.plataforma || ''].join('|'); },
       url: function () { return '/api/data?' + qs({ tipo: 'serie', categoria: params.categoria || '', desde: params.desde || '', plataforma: params.plataforma || '' }); },
       parse: function (j) {
@@ -51,6 +57,7 @@
 
   function load(id) {
     var s = SOURCES[id], st = state[id], k = s.key();
+    if (s.enabled && !s.enabled()) return;
     if (st.key === k) return;
     st.key = k; st.status = 'loading'; st.data = []; st.message = '';
     fetch(s.url(), { headers: { 'x-dashboard-key': encodeURIComponent(key().trim()) } })

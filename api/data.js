@@ -60,6 +60,20 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ cats });
     }
 
+    if (q.tipo === 'marcas') {
+      // Índice marca -> categoría para el autocompletado de la portada (últimos 30 días).
+      const from = isoDay(new Date(today.getTime() - 30 * 86400000));
+      const rows = await windsor({ fields: ['categorias', 'marcas'], from, to: isoDay(today) });
+      const seen = new Set(), pairs = [];
+      for (const r of rows) {
+        if (!r.marcas || !r.categorias) continue;
+        const k = r.categorias + '\u0000' + r.marcas;
+        if (!seen.has(k)) { seen.add(k); pairs.push([r.marcas, r.categorias]); }
+      }
+      pairs.sort((a, b) => a[0].localeCompare(b[0], 'es'));
+      return res.status(200).json({ marcas: pairs });
+    }
+
     if (q.tipo === 'serie') {
       const categoria = String(q.categoria || '');
       const desde = String(q.desde || '');
