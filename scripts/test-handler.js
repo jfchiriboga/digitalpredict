@@ -22,6 +22,12 @@ const call = async (query, key) => {
 (async () => {
   assert.strictEqual((await call({ tipo: 'cats' })).code, 401);
   assert.strictEqual((await call({ tipo: 'cats' }, 'mal')).code, 401);
+  // clave con caracteres fuera de Latin-1 (enviada como lo hace el navegador) y variable con espacios/salto de línea
+  process.env.DASHBOARD_PASSWORD = '  Clave€ ✓ñ\n';
+  assert.strictEqual((await call({ tipo: 'cats' }, encodeURIComponent('Clave€ ✓ñ'))).code, 200);
+  assert.strictEqual((await call({ tipo: 'cats' }, encodeURIComponent('Clave€ ✓'))).code, 401);
+  assert.strictEqual((await call({ tipo: 'cats' }, '%E0%A4%A')).code, 401);
+  process.env.DASHBOARD_PASSWORD = 'secreto';
   const cats = await call({ tipo: 'cats' }, 'secreto');
   assert.deepStrictEqual(cats.body.cats, ['BANCOS', 'OTRA']);
   assert.strictEqual((await call({ tipo: 'serie', categoria: 'BANCOS', desde: 'x' }, 'secreto')).code, 400);

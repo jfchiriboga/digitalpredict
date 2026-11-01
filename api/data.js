@@ -12,10 +12,14 @@ const sha = (s) => crypto.createHash('sha256').update(String(s)).digest();
 const num = (v) => { const x = parseFloat(v); return Number.isFinite(x) ? Math.round(x * 100) / 100 : null; };
 const isoDay = (d) => d.toISOString().slice(0, 10);
 
+// El navegador envía la clave con encodeURIComponent: una cabecera HTTP solo admite Latin-1,
+// así que una clave con €, emoji o comillas curvas no se podría enviar tal cual.
 function authorized(req) {
-  const expected = process.env.DASHBOARD_PASSWORD;
-  const given = req.headers['x-dashboard-key'] || '';
-  return crypto.timingSafeEqual(sha(expected), sha(given));
+  const expected = String(process.env.DASHBOARD_PASSWORD).trim();
+  const raw = String(req.headers['x-dashboard-key'] || '');
+  let given;
+  try { given = decodeURIComponent(raw); } catch { given = raw; }
+  return crypto.timingSafeEqual(sha(expected), sha(given.trim()));
 }
 
 async function windsor({ fields, from, to, filters }) {

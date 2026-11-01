@@ -53,7 +53,7 @@
     var s = SOURCES[id], st = state[id], k = s.key();
     if (st.key === k) return;
     st.key = k; st.status = 'loading'; st.data = []; st.message = '';
-    fetch(s.url(), { headers: { 'x-dashboard-key': key() } })
+    fetch(s.url(), { headers: { 'x-dashboard-key': encodeURIComponent(key().trim()) } })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
       .then(function (x) {
         if (st.key !== k) return;
