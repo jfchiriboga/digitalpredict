@@ -136,6 +136,9 @@
   #landing .opt .cat { flex: none; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--color-fg-muted); }
   #landing .opt.none { cursor: default; color: var(--color-fg-muted); }
   #landing .hint { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--color-fg-muted); }
+  #landing .skip { font: inherit; font-size: 15px; font-weight: 600; color: var(--color-fg-muted); background: none; border: 0; padding: 8px 16px; border-radius: 999px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(255,255,255,.3); transition: color .3s var(--ease), text-decoration-color .3s var(--ease); }
+  #landing .skip:hover { color: var(--misiva-mint); text-decoration-color: var(--misiva-mint); }
+  #landing .skip:focus-visible { outline: 2px solid var(--misiva-mint); outline-offset: 2px; }
   #landing .hashtag { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: 20px; margin: 8px 0 0; background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
   @media (max-width: 600px) {
     #landing { gap: 20px; }
@@ -170,6 +173,7 @@
     <ul class="list" id="lp-list" role="listbox" aria-label="Marcas sugeridas" hidden></ul>
   </form>
   <p class="hint" id="lp-hint" aria-live="polite"></p>
+  <button class="skip" id="lp-skip" type="button">Saltar</button>
   <p class="hashtag">#MakeItMisiva</p>
 </section>
 <div class="ci" hidden>
@@ -842,12 +846,13 @@
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
     const q = norm(input.value);
-    if (!q) { hint.textContent = 'Escribe el nombre de una marca.'; return; }
+    if (!q) { input.focus(); return; }
     const res = buscar(input.value);
     const pick = active >= 0 && shown[active] ? shown[active] : res.find((x) => norm(x.r.marca) === q) || res[0];
     if (pick) elegir(pick.r); else hint.textContent = 'No encontramos esa marca. Prueba con otro nombre.';
   });
 
+  $('lp-skip').addEventListener('click', () => { cerrar(); input.value = ''; dash.setParams({ ver: 'analisis' }); window.scrollTo(0, 0); });
   $('f-cambiar').addEventListener('click', () => dash.setParams({ ver: 'inicio', marca: null, competidores: null }));
   $('f-reset').addEventListener('click', () => dash.setParams({ ver: 'analisis' })); // resetParams ya corrió antes; esto evita volver a la portada
 })();
