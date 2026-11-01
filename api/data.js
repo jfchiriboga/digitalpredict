@@ -36,9 +36,9 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, max-age=300');
   const fail = (code, error) => res.status(code).json({ error });
   try {
-    if (!auth.password()) return fail(500, 'Falta la variable DASHBOARD_PASSWORD en el servidor.');
+    if (!auth.password()) { auth.logEvent(req, 'data_falta_variable', { variable: 'DASHBOARD_PASSWORD' }); return fail(500, 'Falta la variable DASHBOARD_PASSWORD en el servidor.'); }
     if (!process.env.WINDSOR_API_KEY) return fail(500, 'Falta la variable WINDSOR_API_KEY en el servidor.');
-    if (!auth.isAuthenticated(req)) return fail(401, 'Sesión no iniciada o vencida.');
+    if (!auth.isAuthenticated(req)) { auth.logEvent(req, 'data_sin_sesion', { motivo: auth.sessionState(req) }); return fail(401, 'Sesión no iniciada o vencida.'); }
 
     const q = req.query || {};
     const today = new Date();

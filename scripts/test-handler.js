@@ -19,21 +19,31 @@ const callData = async (query, cookie) => { const res = mkRes(); await data({ qu
 const callLogin = async (method, body, headers = {}) => { const res = mkRes(); await login({ method, body, headers }, res); return res; };
 const cookieOf = (res) => String(res.h['Set-Cookie']).split(';')[0];
 
+// captura de los registros del servidor
+const origLog = console.log;
+const logs = [];
+const grab = (...a) => logs.push(a.join(' '));
+console.log = grab; console.warn = grab;
+const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, ''));
+
 (async () => {
   // sin sesión
   assert.strictEqual((await callData({ tipo: 'cats' })).code, 401);
+  assert.strictEqual(lastLog().evento, 'data_sin_sesion'); assert.strictEqual(lastLog().motivo, 'sin_cookie');
   assert.strictEqual((await callData({ tipo: 'cats' }, 'dp_session=basura')).code, 401);
+  assert.strictEqual(lastLog().motivo, 'cookie_invalida');
 
   // login: validaciones y contraseña incorrecta
   assert.strictEqual((await callLogin('GET')).code, 405);
   assert.strictEqual((await callLogin('POST', {})).code, 400);
   assert.strictEqual((await callLogin('POST', { password: '   ' })).code, 400);
   assert.strictEqual((await callLogin('POST', { password: 'mal' })).code, 401);
+  assert.deepStrictEqual([lastLog().evento, lastLog().largo_recibido, lastLog().largo_guardado_recortado], ['login_clave_incorrecta', 3, 7]);
   assert.strictEqual((await callLogin('POST', '{no es json')).code, 400);
 
   // login correcto -> cookie HttpOnly firmada
   const ok = await callLogin('POST', { password: 'secreto' }, { 'x-forwarded-proto': 'https' });
-  assert.strictEqual(ok.code, 200);
+  assert.strictEqual(ok.code, 200); assert.strictEqual(lastLog().evento, 'login_ok');
   assert.match(ok.h['Set-Cookie'], /^dp_session=\d+\.[\w-]+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=28800; Secure$/);
   const ck = cookieOf(ok);
   const cats = await callData({ tipo: 'cats' }, ck);
@@ -73,5 +83,10 @@ const cookieOf = (res) => String(res.h['Set-Cookie']).split(';')[0];
   delete process.env.DASHBOARD_PASSWORD;
   assert.strictEqual((await callLogin('POST', { password: 'x' })).code, 500);
   assert.strictEqual((await callData({ tipo: 'cats' }, ck)).code, 500);
+  // ningún registro contiene contraseñas ni tokens
+  const all = logs.join('\n');
+  for (const secreto of ['secreto', 'Clave', 'mal"', ck.split('=')[1]]) assert.ok(!all.includes(secreto), 'el registro filtra: ' + secreto);
+  assert.ok(logs.some((l) => l.includes('login_falta_variable')) && logs.some((l) => l.includes('data_falta_variable')));
+  console.log = origLog;
   console.log('api/login.js + api/data.js: todas las pruebas pasan');
 })().catch((e) => { console.error(e); process.exit(1); });
