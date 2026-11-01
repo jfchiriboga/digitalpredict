@@ -8,7 +8,7 @@
     var d = new Date(t).toISOString().slice(0, 10);
     return d < '2026-01-01' ? '2026-01-01' : d;
   }
-  var DEFAULTS = { categoria: 'BANCOS', desde: desdeDefecto(), plataforma: '', ver: 'inicio' };
+  var DEFAULTS = { categoria: 'BANCOS', desde: desdeDefecto(), hasta: '', plataforma: '', ver: 'inicio' };
   var JSON_KEYS = { marca: 1, competidores: 1 };
   var params = Object.assign({}, DEFAULTS);
   var listeners = [], draws = new Map(), calcs = new Map(), scheduled = false;
@@ -48,8 +48,8 @@
     },
     serie: {
       enabled: function () { return params.ver === 'analisis'; },
-      key: function () { return [params.categoria, params.desde, params.plataforma || ''].join('|'); },
-      url: function () { return '/api/data?' + qs({ tipo: 'serie', categoria: params.categoria || '', desde: params.desde || '', plataforma: params.plataforma || '' }); },
+      key: function () { return [params.categoria, params.desde, params.hasta || '', params.plataforma || ''].join('|'); },
+      url: function () { return '/api/data?' + qs({ tipo: 'serie', categoria: params.categoria || '', desde: params.desde || '', hasta: params.hasta || '', plataforma: params.plataforma || '' }); },
       parse: function (j) {
         return j.r.map(function (r) {
           return { fecha: r[0], categorias: j.categoria, marcas: j.m[r[1]], plataformas: j.p[r[2]], digital_predict: r[3], timesfm: r[4] };

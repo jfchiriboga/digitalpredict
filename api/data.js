@@ -67,20 +67,23 @@ module.exports = async function handler(req, res) {
     if (q.tipo === 'serie') {
       const categoria = String(q.categoria || '');
       const desde = String(q.desde || '');
+      const hasta = String(q.hasta || '');
       const plataformas = [...new Set(String(q.plataforma || '').split(',').filter(Boolean))];
       if (!categoria || categoria.length > 120) return fail(400, 'categoria inválida');
       if (!/^20\d{2}-[01]\d-[0-3]\d$/.test(desde)) return fail(400, 'desde inválido');
+      if (hasta && (!/^20\d{2}-[01]\d-[0-3]\d$/.test(hasta) || hasta < desde)) return fail(400, 'hasta inválido');
       if (plataformas.some((x) => !PLATAFORMAS.includes(x))) return fail(400, 'plataforma inválida');
 
       const filters = [['categorias', 'eq', categoria]];
       if (plataformas.length === 1) filters.push('and', ['plataformas', 'eq', plataformas[0]]);
-      const rows = await windsor({ fields: SERIE_FIELDS, from: desde, to: isoDay(today), filters });
+      const rows = await windsor({ fields: SERIE_FIELDS, from: desde, to: hasta || isoDay(today), filters });
 
       // Defensa: se vuelve a filtrar aquí por si Windsor ignora un filtro.
       // Respuesta en columnas con diccionarios para mantenerla bajo el límite de 4,5 MB de Vercel.
       const marcas = [], plats = [], mi = new Map(), pi = new Map(), out = [];
       for (const r of rows) {
         if (r.categorias !== categoria || String(r.fecha).slice(0, 10) < desde) continue;
+        if (hasta && String(r.fecha).slice(0, 10) > hasta) continue;
         if (plataformas.length && !plataformas.includes(r.plataformas)) continue;
         if (!mi.has(r.marcas)) { mi.set(r.marcas, marcas.length); marcas.push(r.marcas); }
         if (!pi.has(r.plataformas)) { pi.set(r.plataformas, plats.length); plats.push(r.plataformas); }
