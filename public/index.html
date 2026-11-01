@@ -145,7 +145,7 @@
 
   /* Portada: buscador de marca con autocompletado */
   .ci[hidden], #landing[hidden] { display: none; }
-  #landing { min-height: calc(100vh - 72px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 28px; max-width: 1080px; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  #landing { min-height: calc(100vh - 72px); min-height: calc(100svh - 72px); /* svh: altura visible en móvil, sin contar la barra del navegador */ display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 28px; max-width: 1080px; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
   #landing .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--misiva-mint); margin: 0; }
   #landing h1 { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: clamp(30px, 4.875vw, 66px); line-height: 1.05; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
   #landing h1 .kw { background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
