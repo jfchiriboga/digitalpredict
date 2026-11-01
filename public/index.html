@@ -109,6 +109,35 @@
   .ci .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); display: flex; flex-direction: column; gap: 4px; max-width: 80ch; }
   .ci .foot p { margin: 0; }
   .ci .hashtag { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: 20px; margin: 16px 0 0; background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* Portada: buscador de marca con autocompletado */
+  .ci[hidden], #landing[hidden] { display: none; }
+  #landing { min-height: calc(100vh - 72px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 28px; max-width: 1080px; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  #landing .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--misiva-mint); margin: 0; }
+  #landing h1 { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: clamp(40px, 6.5vw, 88px); line-height: 1.02; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+  #landing h1 .kw { background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #landing .sub { margin: 0; font-size: clamp(16px, 1.6vw, 20px); color: var(--color-fg-muted); max-width: 52ch; }
+  #landing .search { position: relative; width: min(100%, 760px); }
+  #landing .shell { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 999px; background: rgba(255,255,255,.05); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); box-shadow: 0 0 48px rgba(86,225,232,.22), 0 0 96px rgba(92,88,237,.28); }
+  #landing .shell::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: var(--border-neon); pointer-events: none; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  #landing .field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 20px; height: 56px; border-radius: 999px; background: rgba(5,8,23,.55); }
+  #landing .field svg { flex: none; color: var(--misiva-mint); }
+  #landing input { flex: 1; min-width: 0; height: 100%; font: inherit; font-size: 18px; color: #fff; background: transparent; border: 0; outline: 0; }
+  #landing input::placeholder { color: rgba(255,255,255,.45); }
+  #landing .shell:focus-within { box-shadow: 0 0 56px rgba(86,225,232,.38), 0 0 110px rgba(92,88,237,.34); }
+  #landing .go { flex: none; height: 56px; padding: 0 28px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; font-size: 16px; color: #050817; background: var(--grad-signature); cursor: pointer; transition: transform .3s var(--ease), box-shadow .3s var(--ease); }
+  #landing .go:hover { transform: translateY(-2px); box-shadow: var(--glow-mint-soft); }
+  #landing .go:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  #landing .list { position: absolute; left: 0; right: 0; top: calc(100% + 12px); z-index: 10; margin: 0; padding: 8px; list-style: none; text-align: left; border-radius: 24px; background: rgba(10,25,68,.92); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); max-height: 360px; overflow: auto; }
+  #landing .list[hidden] { display: none; }
+  #landing .opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 16px; cursor: pointer; font-size: 16px; }
+  #landing .opt[aria-selected=true] { background: rgba(86,225,232,.14); }
+  #landing .opt mark { background: none; color: var(--misiva-mint); font-weight: 600; }
+  #landing .opt .cat { flex: none; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--color-fg-muted); }
+  #landing .opt.none { cursor: default; color: var(--color-fg-muted); }
+  #landing .hint { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--color-fg-muted); }
+  #landing .hashtag { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: 20px; margin: 8px 0 0; background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  @media (max-width: 600px) { #landing .shell { flex-direction: column; border-radius: 28px; } #landing .field, #landing .go { width: 100%; } }
   @media (prefers-reduced-motion: reduce) { .ci button:hover { transform: none; } }
   @media (max-width: 520px) { .ci .brow { grid-template-columns: 6rem 1fr 3.4rem; } }
 </style>
@@ -117,7 +146,24 @@
 </head>
 <body>
 <div id="dash-root">
-<div class="ci">
+<section id="landing" aria-label="Buscar una marca">
+  <p class="eyebrow">Digital Predict · Performance</p>
+  <h1>Descubre cuánto invierte tu <span class="kw">marca</span> en digital</h1>
+  <p class="sub">Escribe una marca y compárala con su competencia. Todos los canales, una sola vista.</p>
+  <form class="search" id="lp-form" role="search" autocomplete="off">
+    <div class="shell">
+      <label class="field">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="lp-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lp-list" aria-label="Nombre de la marca" placeholder="Escribe una marca" data-draw="lp_estado" data-source="marcas" spellcheck="false">
+      </label>
+      <button class="go" type="submit">Ver análisis</button>
+    </div>
+    <ul class="list" id="lp-list" role="listbox" aria-label="Marcas sugeridas" hidden></ul>
+  </form>
+  <p class="hint" id="lp-hint" aria-live="polite"></p>
+  <p class="hashtag">#MakeItMisiva</p>
+</section>
+<div class="ci" hidden>
   <header id="inicio">
     <p class="eyebrow">Digital Predict · Performance</p>
     <h1>Competencia de <span class="kw">inversión digital</span></h1>
@@ -147,6 +193,7 @@
         <input id="f-desde" type="date" min="2026-01-01" max="2099-12-31" aria-label="Desde">
       </label>
       <button id="f-reset" type="button">Restablecer</button>
+      <button id="f-cambiar" type="button">Cambiar marca</button>
     </div>
     <div>
       <h2>Competidores</h2>
@@ -689,6 +736,111 @@
     try { sessionStorage.setItem('dkey', pass.value); } catch (x) { /* sin almacenamiento */ }
     box.hidden = true; pass.value = ''; dash.retry();
   });
+})();
+</script>
+<script>
+(function () {
+  // Portada: autocompletado de marca. La categoría se deduce de la marca elegida.
+  const $ = (id) => document.getElementById(id);
+  const land = $('landing'), dashEl = document.querySelector('.ci');
+  const form = $('lp-form'), input = $('lp-input'), list = $('lp-list'), hint = $('lp-hint');
+  const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const MAX = 8;
+  let shown = [], active = -1;
+
+  // Compatibilidad: un enlace con filtros de la versión anterior abre el análisis directo.
+  const u = new URLSearchParams(location.search);
+  if (!u.has('ver') && ['marca', 'categoria', 'plataforma', 'desde', 'competidores'].some((k) => u.has(k))) dash.setParams({ ver: 'analisis' });
+
+  function vista() {
+    const an = dash.params().ver === 'analisis';
+    land.hidden = an; dashEl.hidden = !an;
+  }
+  dash.onData(vista);
+
+  dash.draw('lp_estado', (el) => {
+    const g = dash.data('marcas');
+    el.disabled = g.status === 'loading';
+    el.placeholder = g.status === 'loading' ? 'Cargando marcas…' : 'Escribe una marca';
+    if (g.status === 'error' && g.message !== 'auth') hint.textContent = 'No se pudo cargar la lista de marcas. Recarga la página.';
+    else if (hint.textContent.startsWith('No se pudo')) hint.textContent = '';
+  });
+
+  function buscar(q) {
+    const n = norm(q); if (!n) return [];
+    const g = dash.data('marcas'); if (g.status !== 'ok') return [];
+    const out = [];
+    for (const r of g.data) {
+      const m = norm(r.marca), i = m.indexOf(n);
+      if (i < 0) continue;
+      out.push({ r, rank: i === 0 ? 0 : m[i - 1] === ' ' ? 1 : 2 });
+    }
+    out.sort((a, b) => a.rank - b.rank || a.r.marca.length - b.r.marca.length || a.r.marca.localeCompare(b.r.marca, 'es'));
+    return out.slice(0, MAX);
+  }
+  function resaltar(el, txt, q) {
+    const n = norm(q), i = norm(txt).indexOf(n);
+    // norm() puede cambiar la longitud (diacríticos compuestos): en ese caso no se resalta.
+    if (i < 0 || txt.normalize('NFD').length !== txt.length || norm(txt).length !== txt.length) { el.textContent = txt; return; }
+    el.append(txt.slice(0, i));
+    const mk = document.createElement('mark'); mk.textContent = txt.slice(i, i + n.length); el.append(mk);
+    el.append(txt.slice(i + n.length));
+  }
+  function cerrar() { list.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); active = -1; }
+  function marcar(i) {
+    active = i;
+    [...list.children].forEach((li, k) => li.setAttribute('aria-selected', String(k === i)));
+    if (i >= 0) { input.setAttribute('aria-activedescendant', 'lp-o' + i); list.children[i].scrollIntoView({ block: 'nearest' }); }
+    else input.removeAttribute('aria-activedescendant');
+  }
+  function pintar() {
+    shown = buscar(input.value);
+    list.replaceChildren();
+    if (!norm(input.value)) return cerrar();
+    if (!shown.length) {
+      const li = document.createElement('li'); li.className = 'opt none'; li.setAttribute('role', 'option'); li.setAttribute('aria-disabled', 'true');
+      li.textContent = dash.data('marcas').status === 'ok' ? 'No encontramos esa marca' : 'Cargando marcas…';
+      list.append(li);
+    }
+    shown.forEach(({ r }, k) => {
+      const li = document.createElement('li'); li.className = 'opt'; li.id = 'lp-o' + k; li.setAttribute('role', 'option'); li.setAttribute('aria-selected', 'false');
+      const nm = document.createElement('span'); resaltar(nm, r.marca, input.value);
+      const ct = document.createElement('span'); ct.className = 'cat'; ct.textContent = r.categoria;
+      li.append(nm, ct);
+      li.addEventListener('pointerdown', (ev) => { ev.preventDefault(); elegir(r); });
+      li.addEventListener('pointermove', () => { if (active !== k) marcar(k); });
+      list.append(li);
+    });
+    list.hidden = false; input.setAttribute('aria-expanded', 'true'); active = -1; hint.textContent = '';
+  }
+  function elegir(r) {
+    cerrar(); input.value = '';
+    dash.setParams({ ver: 'analisis', categoria: r.categoria, marca: r.marca, competidores: null });
+    window.scrollTo(0, 0);
+  }
+  input.addEventListener('input', pintar);
+  input.addEventListener('focus', () => { if (norm(input.value)) pintar(); });
+  input.addEventListener('blur', cerrar);
+  input.addEventListener('keydown', (ev) => {
+    const n = shown.length;
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      if (list.hidden) pintar();
+      if (!shown.length) return; ev.preventDefault();
+      const m = shown.length;
+      marcar(ev.key === 'ArrowDown' ? (active + 1) % m : (active - 1 + m) % m);
+    } else if (ev.key === 'Escape' && !list.hidden) { ev.preventDefault(); cerrar(); }
+  });
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const q = norm(input.value);
+    if (!q) { hint.textContent = 'Escribe el nombre de una marca.'; return; }
+    const res = buscar(input.value);
+    const pick = active >= 0 && shown[active] ? shown[active] : res.find((x) => norm(x.r.marca) === q) || res[0];
+    if (pick) elegir(pick.r); else hint.textContent = 'No encontramos esa marca. Prueba con otro nombre.';
+  });
+
+  $('f-cambiar').addEventListener('click', () => dash.setParams({ ver: 'inicio', marca: null, competidores: null }));
+  $('f-reset').addEventListener('click', () => dash.setParams({ ver: 'analisis' })); // resetParams ya corrió antes; esto evita volver a la portada
 })();
 </script>
 <script>dash.start();</script>
