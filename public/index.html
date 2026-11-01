@@ -75,6 +75,9 @@
   .ci .chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 9.5rem; overflow: auto; min-height: 2rem; }
   .ci .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 10px; }
   .ci .chip[aria-pressed=true] { background: rgba(86,225,232,.12); border-color: var(--misiva-mint); box-shadow: var(--glow-mint-soft); }
+  .ci .plats { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .ci .plbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ci .plats .chips { max-height: none; min-height: 0; }
   .ci .chip.is-main { border-style: dashed; cursor: default; }
   .ci .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .ci .kpis { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
@@ -212,17 +215,18 @@
       <label>Marca a analizar
         <select id="f-marca" data-draw="sel_marca" data-source="marcas_cat" aria-label="Marca a analizar"></select>
       </label>
-      <label>Plataforma
-        <select id="f-plat" aria-label="Plataforma">
-          <option value="">Todas</option>
-          <option value="Google Ads">Google Ads</option>
-          <option value="Meta">Meta</option>
-          <option value="TikTok">TikTok</option>
-          <option value="YouTube">YouTube</option>
-          <option value="Programatic">Programática</option>
-          <option value="X">X</option>
-        </select>
-      </label>
+      <div class="plats" role="group" aria-label="Plataformas">
+        <span class="plbl">Plataformas</span>
+        <div class="chips" id="f-plat">
+          <button type="button" class="chip pchip" data-plat="" aria-pressed="true">Todas</button>
+          <button type="button" class="chip pchip" data-plat="Google Ads" aria-pressed="false">Google Ads</button>
+          <button type="button" class="chip pchip" data-plat="Meta" aria-pressed="false">Meta</button>
+          <button type="button" class="chip pchip" data-plat="TikTok" aria-pressed="false">TikTok</button>
+          <button type="button" class="chip pchip" data-plat="YouTube" aria-pressed="false">YouTube</button>
+          <button type="button" class="chip pchip" data-plat="Programatic" aria-pressed="false">Programática</button>
+          <button type="button" class="chip pchip" data-plat="X" aria-pressed="false">X</button>
+        </div>
+      </div>
       <div class="dr" id="dr">
         <span class="dr-lbl" id="dr-lbl">Periodo</span>
         <button id="dr-btn" class="dr-btn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="dr-lbl dr-txt">
@@ -353,7 +357,7 @@
       const comps = Array.isArray(p.competidores)
         ? p.competidores.filter((n) => by.has(n) && n !== marca)
         : rows.filter((r) => r.marca !== marca).slice(0, 4).map((r) => r.marca);
-      return { rows, by, marca, comps, list: [marca, ...comps], categoria: p.categoria, plataforma: (p.plataforma || '') === 'Programatic' ? 'Programática' : p.plataforma || '' };
+      return { rows, by, marca, comps, list: [marca, ...comps], categoria: p.categoria, plataforma: String(p.plataforma || '').split(',').filter(Boolean).map((x) => (x === 'Programatic' ? 'Programática' : x)).join(', ') };
     },
     idle(el, g) {
       el.replaceChildren();
@@ -474,7 +478,17 @@
   // Controles
   const $ = (id) => document.getElementById(id);
   const desde = $('f-desde'), buscar = $('f-buscar'), plat = $('f-plat');
-  plat.addEventListener('change', () => dash.setParams({ plataforma: plat.value, marca: null, competidores: null }));
+  const platSel = () => String(dash.params().plataforma || '').split(',').filter(Boolean);
+  const showPlat = () => {
+    const sel = platSel();
+    for (const b of plat.querySelectorAll('.pchip')) b.setAttribute('aria-pressed', String(b.dataset.plat ? sel.includes(b.dataset.plat) : !sel.length));
+  };
+  plat.addEventListener('click', (ev) => {
+    const b = ev.target.closest('.pchip'); if (!b) return;
+    const p = b.dataset.plat, sel = platSel();
+    const next = !p ? [] : sel.includes(p) ? sel.filter((x) => x !== p) : [...sel, p];
+    dash.setParams({ plataforma: next.join(','), marca: null, competidores: null });
+  });
   const showDesde = () => { desde.value = dash.params().desde ?? ''; };
   desde.addEventListener('change', () => { if (desde.value && desde.validity.valid) dash.setParams({ desde: desde.value }); });
   desde.addEventListener('blur', showDesde);
@@ -555,7 +569,7 @@
   document.addEventListener('pointerdown', (ev) => { if (!drPop.hidden && !$('dr').contains(ev.target)) drAbrir(false); });
   dash.onData(drPintar);
   drPintar();
-  dash.onData(() => { if (desde !== document.activeElement) showDesde(); plat.value = dash.params().plataforma ?? ''; });
+  dash.onData(() => { if (desde !== document.activeElement) showDesde(); showPlat(); });
 
   dash.draw('sel_cat', (sel) => {
     const g = dash.data('categorias_lista');

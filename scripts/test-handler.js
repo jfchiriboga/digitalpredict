@@ -76,6 +76,9 @@ const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, '')
   assert.strictEqual(lastUrl.searchParams.get('api_key'), 'k');
   const m = await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', plataforma: 'Meta' }, ck);
   assert.deepStrictEqual(m.body.r.map((r) => m.body.m[r[1]]), ['A']);
+  const mm = await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', plataforma: 'Meta,TikTok' }, ck);
+  assert.deepStrictEqual(mm.body.r.map((r) => mm.body.m[r[1]]).sort(), ['A', 'B']);
+  assert.strictEqual((await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', plataforma: 'Meta,Radio' }, ck)).code, 400);
 
   // variables faltantes
   delete process.env.SESSION_SECRET;
