@@ -41,14 +41,6 @@
   .dash-skeleton { border-radius: var(--cds-radius); background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(86,225,232,.10) 50%, rgba(255,255,255,.04) 75%); background-size: 200% 100%; animation: dash-sk 1.4s linear infinite; }
   @keyframes dash-sk { to { background-position: -200% 0; } }
   @media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
-  #login { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: color-mix(in srgb, var(--color-bg) 88%, transparent); padding: 16px; }
-  #login[hidden] { display: none; }
-  #login form { background: #0A1944; box-shadow: var(--glow-violet-soft); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 24px; display: flex; flex-direction: column; gap: 12px; width: min(100%, 22rem); }
-  #login h2 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 700; font-size: 22px; }
-  #login p { margin: 0; color: var(--color-fg-muted); font-size: 13px; }
-  #login input { font: inherit; padding: 8px 10px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: rgba(255,255,255,.06); color: var(--color-fg); }
-  #login button { font: inherit; font-weight: 600; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--grad-signature); color: #050817; cursor: pointer; }
-  #login .err { color: var(--color-bad); }
 
   #dash-root { --dash-gutter: clamp(12px, 3vw, 32px); }
   .ci { max-width: 1180px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
@@ -823,28 +815,6 @@
 </script>
 </div>
 
-<div id="login" hidden>
-  <form id="login-form">
-    <h2>Acceso</h2>
-    <p>Ingresa la contraseña del dashboard.</p>
-    <input id="login-pass" type="password" autocomplete="current-password" aria-label="Contraseña" required>
-    <p class="err" id="login-err" hidden>Contraseña incorrecta.</p>
-    <button type="submit">Entrar</button>
-  </form>
-</div>
-
-<script>
-(function () {
-  var box = document.getElementById('login'), pass = document.getElementById('login-pass'), err = document.getElementById('login-err');
-  var shown = false;
-  window.__dashNeedLogin = function () { if (shown) err.hidden = false; shown = true; box.hidden = false; pass.focus(); };
-  document.getElementById('login-form').addEventListener('submit', function (e) {
-    e.preventDefault(); err.hidden = true;
-    try { sessionStorage.setItem('dkey', pass.value); } catch (x) { /* sin almacenamiento */ }
-    box.hidden = true; pass.value = ''; dash.retry();
-  });
-})();
-</script>
 <script>
 (function () {
   // Portada: autocompletado de marca. La categoría se deduce de la marca elegida.
