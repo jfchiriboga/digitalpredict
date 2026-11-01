@@ -215,18 +215,6 @@
       <label>Marca a analizar
         <select id="f-marca" data-draw="sel_marca" data-source="marcas_cat" aria-label="Marca a analizar"></select>
       </label>
-      <div class="plats" role="group" aria-label="Plataformas">
-        <span class="plbl">Plataformas</span>
-        <div class="chips" id="f-plat">
-          <button type="button" class="chip pchip" data-plat="" aria-pressed="true">Todas</button>
-          <button type="button" class="chip pchip" data-plat="Google Ads" aria-pressed="false">Google Ads</button>
-          <button type="button" class="chip pchip" data-plat="Meta" aria-pressed="false">Meta</button>
-          <button type="button" class="chip pchip" data-plat="TikTok" aria-pressed="false">TikTok</button>
-          <button type="button" class="chip pchip" data-plat="YouTube" aria-pressed="false">YouTube</button>
-          <button type="button" class="chip pchip" data-plat="Programatic" aria-pressed="false">Programática</button>
-          <button type="button" class="chip pchip" data-plat="X" aria-pressed="false">X</button>
-        </div>
-      </div>
       <div class="dr" id="dr">
         <span class="dr-lbl" id="dr-lbl">Periodo</span>
         <button id="dr-btn" class="dr-btn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="dr-lbl dr-txt">
@@ -241,8 +229,18 @@
           </label>
         </div>
       </div>
-      <button id="f-reset" type="button">Restablecer</button>
-      <button id="f-cambiar" type="button">Cambiar marca</button>
+    </div>
+    <div class="plats" role="group" aria-label="Plataformas">
+      <span class="plbl">Plataformas</span>
+      <div class="chips" id="f-plat">
+        <button type="button" class="chip pchip" data-plat="" aria-pressed="true">Todas</button>
+        <button type="button" class="chip pchip" data-plat="Google Ads" aria-pressed="false">Google Ads</button>
+        <button type="button" class="chip pchip" data-plat="Meta" aria-pressed="false">Meta</button>
+        <button type="button" class="chip pchip" data-plat="TikTok" aria-pressed="false">TikTok</button>
+        <button type="button" class="chip pchip" data-plat="YouTube" aria-pressed="false">YouTube</button>
+        <button type="button" class="chip pchip" data-plat="Programatic" aria-pressed="false">Programática</button>
+        <button type="button" class="chip pchip" data-plat="X" aria-pressed="false">X</button>
+      </div>
     </div>
     <div>
       <h2>Competidores</h2>
@@ -492,7 +490,6 @@
   const showDesde = () => { desde.value = dash.params().desde ?? ''; };
   desde.addEventListener('change', () => { if (desde.value && desde.validity.valid) dash.setParams({ desde: desde.value }); });
   desde.addEventListener('blur', showDesde);
-  $('f-reset').addEventListener('click', () => { dash.resetParams(); buscar.value = ''; });
   $('f-top').addEventListener('click', () => dash.setParams({ competidores: null }));
   $('f-ninguno').addEventListener('click', () => dash.setParams({ competidores: [] }));
   const applySearch = () => {
@@ -940,8 +937,6 @@
   });
 
   $('lp-skip').addEventListener('click', () => { cerrar(); input.value = ''; dash.setParams({ ver: 'analisis' }); window.scrollTo(0, 0); });
-  $('f-cambiar').addEventListener('click', () => dash.setParams({ ver: 'inicio', marca: null, competidores: null }));
-  $('f-reset').addEventListener('click', () => dash.setParams({ ver: 'analisis' })); // resetParams ya corrió antes; esto evita volver a la portada
 })();
 </script>
 <div id="login" hidden>
