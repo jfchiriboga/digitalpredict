@@ -137,7 +137,16 @@
   #landing .opt.none { cursor: default; color: var(--color-fg-muted); }
   #landing .hint { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--color-fg-muted); }
   #landing .hashtag { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: 20px; margin: 8px 0 0; background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  @media (max-width: 600px) { #landing .shell { flex-direction: column; border-radius: 28px; } #landing .field, #landing .go { width: 100%; } }
+  @media (max-width: 600px) {
+    #landing { gap: 20px; }
+    #landing .shell { padding: 6px; gap: 6px; }
+    #landing .field { height: 44px; padding: 0 8px 0 14px; gap: 8px; }
+    #landing .field svg { width: 18px; height: 18px; }
+    #landing input { font-size: 16px; } /* 16px evita el zoom automático de iOS */
+    #landing .go { height: 44px; padding: 0 16px; font-size: 14px; }
+    #landing .list { top: calc(100% + 8px); border-radius: 20px; }
+    #landing .opt { padding: 10px 12px; font-size: 15px; }
+  }
   @media (prefers-reduced-motion: reduce) { .ci button:hover { transform: none; } }
   @media (max-width: 520px) { .ci .brow { grid-template-columns: 6rem 1fr 3.4rem; } }
 </style>
