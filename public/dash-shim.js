@@ -2,7 +2,13 @@
    Provee: dash.data, dash.calc, dash.draw, dash.onData, dash.params/setParams/resetParams, dash.colors. */
 (function () {
   'use strict';
-  var DEFAULTS = { categoria: 'BANCOS', desde: '2026-01-01', plataforma: '', ver: 'inicio' };
+  // Periodo por defecto: últimos 30 días (sin bajar del inicio de los datos).
+  function desdeDefecto() {
+    var n = new Date(), t = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - 30 * 86400000;
+    var d = new Date(t).toISOString().slice(0, 10);
+    return d < '2026-01-01' ? '2026-01-01' : d;
+  }
+  var DEFAULTS = { categoria: 'BANCOS', desde: desdeDefecto(), plataforma: '', ver: 'inicio' };
   var JSON_KEYS = { marca: 1, competidores: 1 };
   var params = Object.assign({}, DEFAULTS);
   var listeners = [], draws = new Map(), calcs = new Map(), scheduled = false;

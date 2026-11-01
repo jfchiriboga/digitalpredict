@@ -34,7 +34,7 @@ El formato de estos archivos es el del artefacto. No se ejecutan solos: sirven c
 - `inversion_real` no se usa porque viene vacía en las categorías probadas.
 - TimesFM: columna `timesfm`, serie del modelo de pronóstico para las mismas fechas. La tabla no tiene fechas futuras.
 - WAPE diario: suma de |TimesFM − estimado| por marca y día, dividida por la inversión estimada total.
-- La tabla trae datos diarios desde 2026-01-01 por marca y plataforma. Una carga completa son unas 120 mil filas, por eso la página consulta una categoría a la vez.
+- La tabla trae datos diarios desde 2026-01-01 (la página abre con los últimos 30 días) por marca y plataforma. Una carga completa son unas 120 mil filas, por eso la página consulta una categoría a la vez.
 - Cada lector necesita el conector Windsor en su propia cuenta de claude.ai. El nombre del conector en las consultas es `Windsor.ai`.
 
 ## Despliegue en Vercel
