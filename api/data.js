@@ -1,14 +1,26 @@
 'use strict';
 // Función de servidor (Vercel). El navegador nunca ve la clave de Windsor:
 // llama a /api/data y esta función consulta Windsor con parámetros validados.
+const crypto = require('crypto');
 
 const WINDSOR_URL = 'https://connectors.windsor.ai/mysql';
 const DEFAULT_ACCOUNT = 'reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria';
 const PLATAFORMAS = ['Google Ads', 'Meta', 'TikTok', 'YouTube', 'Programatic', 'X'];
 const SERIE_FIELDS = ['fecha', 'categorias', 'marcas', 'plataformas', 'digital_predict', 'timesfm'];
 
+const sha = (s) => crypto.createHash('sha256').update(String(s)).digest();
 const num = (v) => { const x = parseFloat(v); return Number.isFinite(x) ? Math.round(x * 100) / 100 : null; };
 const isoDay = (d) => d.toISOString().slice(0, 10);
+
+// El navegador envía la clave con encodeURIComponent: una cabecera HTTP solo admite Latin-1,
+// así que una clave con €, emoji o comillas curvas no se podría enviar tal cual.
+function authorized(req) {
+  const expected = String(process.env.DASHBOARD_PASSWORD).trim();
+  const raw = String(req.headers['x-dashboard-key'] || '');
+  let given;
+  try { given = decodeURIComponent(raw); } catch { given = raw; }
+  return crypto.timingSafeEqual(sha(expected), sha(given.trim()));
+}
 
 async function windsor({ fields, from, to, filters }) {
   const url = new URL(WINDSOR_URL);
@@ -31,10 +43,12 @@ async function windsor({ fields, from, to, filters }) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.setHeader('Cache-Control', 'private, max-age=300');
   const fail = (code, error) => res.status(code).json({ error });
   try {
+    if (!process.env.DASHBOARD_PASSWORD) return fail(500, 'Falta la variable DASHBOARD_PASSWORD en el servidor.');
     if (!process.env.WINDSOR_API_KEY) return fail(500, 'Falta la variable WINDSOR_API_KEY en el servidor.');
+    if (!authorized(req)) return fail(401, 'Contraseña incorrecta.');
 
     const q = req.query || {};
     const today = new Date();
