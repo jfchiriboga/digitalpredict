@@ -513,6 +513,7 @@
   // Selector de periodo (reemplaza el campo «Desde»): atajos relativos a hoy.
   const DATA_START = '2026-01-01';
   const nfRango = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const nfRangoCorto = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const iso = (d) => d.toISOString().slice(0, 10);
   const hoyIso = () => { const n = new Date(); return iso(new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()))); };
   const restaMeses = (hoy, m) => {
@@ -542,7 +543,9 @@
   function drPintar() {
     const hoy = hoyIso(), d = dash.params().desde || DATA_START, act = drActivo();
     const dias = Math.max(1, Math.round((new Date(hoy) - new Date(d)) / 86400000));
-    drTxt.textContent = nfRango.format(new Date(d + 'T00:00:00Z')) + ' – ' + nfRango.format(new Date(hoy + 'T00:00:00Z')) + ' (' + (act ? act.short : dias + ' días') + ')';
+    const misma = d.slice(0, 4) === hoy.slice(0, 4); // mismo año: se muestra una sola vez, al final
+    const ini = (misma ? nfRangoCorto : nfRango).format(new Date(d + 'T00:00:00Z'));
+    drTxt.textContent = ini + ' – ' + nfRango.format(new Date(hoy + 'T00:00:00Z')) + ' (' + (act ? act.short : dias + ' días') + ')';
     drList.replaceChildren();
     for (const p of PRESETS) {
       const f = presetDesde(p, hoy);
