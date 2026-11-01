@@ -47,14 +47,11 @@ Estructura: `public/` (página y D3 incluido, sin CDN), `api/data.js` (función 
 |---|---|
 | `WINDSOR_API_KEY` | Clave de la API de Windsor. Solo vive en el servidor; el navegador nunca la ve. |
 | `WINDSOR_ACCOUNT` | Cuenta del conector `mysql`. Por defecto `reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria`. |
-| `DASHBOARD_PASSWORD` | Contraseña que pide la página. Es obligatoria: sin ella la API responde 500 y no entrega datos. |
 
 ### Cómo se protege
 
 - La clave de Windsor queda en el servidor. La función solo acepta parámetros validados (`tipo`, `categoria`, `desde`, `plataforma`) y arma ella misma la consulta; no reenvía consultas arbitrarias.
-- Sin la contraseña correcta la API responde 401. La página la pide al abrir y la guarda solo en la pestaña (`sessionStorage`).
-- Las respuestas llevan `Cache-Control: private` para que ninguna caché compartida las sirva a quien no tenga la contraseña.
-- La contraseña es compartida, no hay usuarios individuales. Si necesitas control por persona, activa Vercel Authentication o SSO sobre el despliegue y quita o cambia esta capa.
+- La app no tiene autenticación propia: cualquiera con la URL ve los datos. Si necesitas restringir el acceso, activa Vercel Authentication o SSO sobre el despliegue.
 
 ### Probar en local
 

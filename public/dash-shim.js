@@ -27,7 +27,6 @@
   }
   Object.assign(params, readUrl());
 
-  function key() { try { return sessionStorage.getItem('dkey') || ''; } catch (e) { return ''; } }
   function qs(o) { return Object.keys(o).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(o[k]); }).join('&'); }
 
   var SOURCES = {
@@ -60,14 +59,11 @@
     if (s.enabled && !s.enabled()) return;
     if (st.key === k) return;
     st.key = k; st.status = 'loading'; st.data = []; st.message = '';
-    fetch(s.url(), { headers: { 'x-dashboard-key': encodeURIComponent(key().trim()) } })
+    fetch(s.url())
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
       .then(function (x) {
         if (st.key !== k) return;
-        if (x.r.status === 401) {
-          st.status = 'error'; st.message = 'auth'; st.key = null;
-          if (window.__dashNeedLogin) window.__dashNeedLogin();
-        } else if (!x.r.ok) { st.status = 'error'; st.message = x.j.error || 'HTTP ' + x.r.status; st.key = null; }
+        if (!x.r.ok) { st.status = 'error'; st.message = x.j.error || 'HTTP ' + x.r.status; st.key = null; }
         else { st.data = s.parse(x.j); st.status = 'ok'; }
         schedule();
       })
