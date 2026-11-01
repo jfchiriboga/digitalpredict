@@ -70,8 +70,10 @@
   .ci select { min-width: min(100%, 14rem); }
   /* Categoría, marca y periodo: misma altura y mismo ancho; etiquetas alineadas arriba */
   .ci .ctl select, .ci .dr-btn { box-sizing: border-box; height: 2.75rem; min-width: min(100%, 14rem); line-height: 1.2; }
+  .ci .dr-btn { width: 100%; }
   .ci .ctl select { width: 100%; }
-  .ci .ctl > label, .ci .dr { width: 14rem; max-width: 100%; }
+  .ci .ctl > label { width: 14rem; max-width: 100%; }
+  .ci .dr { width: 19rem; max-width: 100%; } /* más largo: el rango y su nombre caben en una línea */
   .ci .ctl > label, .ci .dr-lbl { line-height: 1.2; }
   .ci button { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 600; color: var(--color-fg); background: rgba(255,255,255,.06); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: all .3s var(--ease); }
   .ci button:hover { background: rgba(255,255,255,.1); border-color: var(--misiva-mint); box-shadow: var(--glow-mint-soft); transform: translateY(-2px); }
@@ -88,7 +90,7 @@
   .ci .kpis { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
   .ci .kpi { display: flex; flex-direction: column; gap: 4px; }
   .ci .kpi .lbl { text-transform: uppercase; letter-spacing: .12em; font-weight: 600; font-size: 11px; color: var(--color-fg-muted); }
-  .ci .kpi .val { font-family: var(--font-anthropic-serif); font-weight: 700; background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: clamp(28px, 3vw, 40px); font-variant-numeric: tabular-nums; }
+  .ci .kpi .val { font-family: var(--font-anthropic-serif); font-weight: 700; background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: clamp(21px, 2.25vw, 30px); font-variant-numeric: tabular-nums; }
   .ci .chart { position: relative; min-height: 320px; }
   .ci .chart.short { min-height: 120px; }
   .ci .chart svg { display: block; width: 100%; height: auto; }
@@ -124,7 +126,7 @@
   .ci .dr { position: relative; display: flex; flex-direction: column; gap: 4px; }
   .ci .dr-lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
   .ci .dr-btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--cds-font-size-body); font-weight: 500; padding: 8px 14px; border-radius: var(--cds-radius); background: rgba(255,255,255,.06); }
-  .ci .dr-btn #dr-txt { flex: 1; text-align: left; }
+  .ci .dr-btn #dr-txt { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .ci .dr-btn svg:first-child { color: var(--misiva-mint); flex: none; }
   .ci .dr-btn .dr-caret { transition: transform .3s var(--ease); flex: none; opacity: .7; }
   .ci .dr-btn[aria-expanded=true] { border-color: var(--misiva-mint); box-shadow: var(--glow-mint-soft); }
@@ -136,8 +138,10 @@
   .ci .dr-opt:hover, .ci .dr-opt:focus-visible { background: rgba(255,255,255,.07); border-color: transparent; box-shadow: none; transform: none; }
   .ci .dr-opt[aria-selected=true] { background: rgba(86,225,232,.14); color: var(--misiva-mint-light); }
   .ci .dr-opt small { font-size: 12px; font-weight: 500; color: var(--color-fg-muted); }
-  .ci .dr-custom { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding: 12px 14px 8px; border-top: 1px solid var(--color-border-line); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .ci .dr-custom input { width: 100%; }
+  .ci .dr-custom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; padding: 12px 14px 8px; border-top: 1px solid var(--color-border-line); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ci .dr-custom[hidden] { display: none; }
+  .ci .dr-custom label { display: flex; flex-direction: column; gap: 6px; width: auto; }
+  .ci .dr-custom input { width: 100%; min-width: 0; }
 
   /* Portada: buscador de marca con autocompletado */
   .ci[hidden], #landing[hidden] { display: none; }
@@ -182,6 +186,10 @@
   }
   @media (prefers-reduced-motion: reduce) { .ci button:hover { transform: none; } }
   @media (max-width: 520px) { .ci .brow { grid-template-columns: 6rem 1fr 3.4rem; } }
+  /* Cabecera de selección: textos 10 % más pequeños */
+  .ci #filtros .ctl label, .ci #filtros .dr-lbl, .ci #filtros .plbl { font-size: calc(var(--cds-font-size-caption) * .9); }
+  .ci #filtros .ctl select, .ci #filtros .dr-btn { font-size: calc(var(--cds-font-size-body) * .9); }
+  .ci #filtros .plats .chip { font-size: calc(var(--cds-font-size-caption) * .9); }
 </style>
 <script src="/vendor/d3.min.js"></script>
 <script src="/dash-shim.js"></script>
@@ -230,9 +238,14 @@
         </button>
         <div class="dr-pop" id="dr-pop" hidden>
           <div role="listbox" aria-labelledby="dr-lbl" id="dr-list"></div>
-          <label class="dr-custom">Desde una fecha
-            <input id="f-desde" type="date" min="2026-01-01" max="2099-12-31" aria-label="Desde una fecha">
-          </label>
+          <div class="dr-custom" id="dr-custom" hidden>
+            <label>Desde
+              <input id="f-desde" type="date" min="2026-01-01" max="2099-12-31" aria-label="Fecha inicial">
+            </label>
+            <label>Hasta
+              <input id="f-hasta" type="date" min="2026-01-01" max="2099-12-31" aria-label="Fecha final">
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -493,9 +506,20 @@
     const next = !p ? [] : sel.includes(p) ? sel.filter((x) => x !== p) : [...sel, p];
     dash.setParams({ plataforma: next.join(','), marca: null, competidores: null });
   });
-  const showDesde = () => { desde.value = dash.params().desde ?? ''; };
-  desde.addEventListener('change', () => { if (desde.value && desde.validity.valid) dash.setParams({ desde: desde.value }); });
+  const hoyIso0 = () => { const n = new Date(); return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())).toISOString().slice(0, 10); };
+  const hasta = $('f-hasta');
+  hasta.max = hoyIso0(); desde.max = hoyIso0();
+  const showDesde = () => { desde.value = dash.params().desde ?? ''; hasta.value = dash.params().hasta || ''; };
+  const aplicaFechas = () => {
+    if (!desde.value || !desde.validity.valid || !hasta.validity.valid) return;
+    if (hasta.value && hasta.value < desde.value) { hasta.setCustomValidity('La fecha final es anterior a la inicial'); hasta.reportValidity(); return; }
+    hasta.setCustomValidity('');
+    dash.setParams({ desde: desde.value, hasta: hasta.value });
+  };
+  desde.addEventListener('change', aplicaFechas);
+  hasta.addEventListener('change', aplicaFechas);
   desde.addEventListener('blur', showDesde);
+  hasta.addEventListener('blur', showDesde);
   $('f-top').addEventListener('click', () => dash.setParams({ competidores: null }));
   $('f-ninguno').addEventListener('click', () => dash.setParams({ competidores: [] }));
   const applySearch = () => {
@@ -523,38 +547,43 @@
     return iso(d);
   };
   const restaDias = (hoy, n) => iso(new Date(new Date(hoy + 'T00:00:00Z').getTime() - n * 86400000));
+  const finMesAnterior = (hoy) => { const d = new Date(hoy + 'T00:00:00Z'); return iso(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 0))); };
+  const iniMesAnterior = (hoy) => { const d = new Date(hoy + 'T00:00:00Z'); return iso(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 1))); };
+  // range: [desde, hasta]; hasta '' = hasta hoy
   const PRESETS = [
-    { id: 'd30', label: 'Últimos 30 días', short: '30 días', from: (h) => restaDias(h, 30) },
-    { id: 'm1', label: 'Último mes', short: '1 mes', from: (h) => restaMeses(h, 1) },
-    { id: 'd28', label: 'Últimos 28 días', short: '28 días', from: (h) => restaDias(h, 28) },
-    { id: 'm2', label: 'Últimos 2 meses', short: '2 meses', from: (h) => restaMeses(h, 2) },
-    { id: 'm3', label: 'Últimos 3 meses', short: '3 meses', from: (h) => restaMeses(h, 3) },
-    { id: 'm6', label: 'Últimos 6 meses', short: '6 meses', from: (h) => restaMeses(h, 6) },
-    { id: 'm12', label: 'Últimos 12 meses', short: '12 meses', from: (h) => restaMeses(h, 12) },
-    { id: 'todo', label: 'Todo el historial', short: 'Todo', from: () => DATA_START },
+    { id: 'd30', label: 'Últimos 30 días', short: '30 días', range: (h) => [restaDias(h, 30), ''] },
+    { id: 'mant', label: 'Mes anterior', short: 'mes anterior', range: (h) => [iniMesAnterior(h), finMesAnterior(h)] },
+    { id: 'm3', label: 'Últimos 3 meses', short: '3 meses', range: (h) => [restaMeses(h, 3), ''] },
+    { id: 'm12', label: 'Últimos 12 meses', short: '12 meses', range: (h) => [restaMeses(h, 12), ''] },
   ];
-  const presetDesde = (p, hoy) => { const f = p.from(hoy); return f < DATA_START ? DATA_START : f; }; // los datos empiezan el 1 ene 2026
+  const presetRango = (p, hoy) => { const [d, h] = p.range(hoy); return [d < DATA_START ? DATA_START : d, h]; }; // los datos empiezan el 1 ene 2026
+  let drCustom = false; // panel «Personalizado» abierto
   const drBtn = $('dr-btn'), drPop = $('dr-pop'), drList = $('dr-list'), drTxt = $('dr-txt');
   const drActivo = () => {
-    const hoy = hoyIso(), d = dash.params().desde;
-    if (d === DATA_START) return PRESETS[PRESETS.length - 1]; // el rango completo siempre se llama «Todo»
-    return PRESETS.find((p) => p.id !== 'todo' && p.from(hoy) === d) || null;
+    const hoy = hoyIso(), { desde: d, hasta: h } = dash.params();
+    return PRESETS.find((p) => { const r = presetRango(p, hoy); return r[0] === d && r[1] === (h || ''); }) || null;
   };
   function drPintar() {
-    const hoy = hoyIso(), d = dash.params().desde || DATA_START, act = drActivo();
-    const dias = Math.max(1, Math.round((new Date(hoy) - new Date(d)) / 86400000));
-    const misma = d.slice(0, 4) === hoy.slice(0, 4); // mismo año: se muestra una sola vez, al final
+    const hoy = hoyIso(), pr = dash.params(), d = pr.desde || DATA_START, h = pr.hasta || hoy, act = drActivo();
+    const dias = Math.max(1, Math.round((new Date(h) - new Date(d)) / 86400000) + (pr.hasta ? 1 : 0));
+    const misma = d.slice(0, 4) === h.slice(0, 4); // mismo año: se muestra una sola vez, al final
     const ini = (misma ? nfRangoCorto : nfRango).format(new Date(d + 'T00:00:00Z'));
-    drTxt.textContent = ini + ' – ' + nfRango.format(new Date(hoy + 'T00:00:00Z')) + ' (' + (act ? act.short : dias + ' días') + ')';
+    drTxt.textContent = ini + ' – ' + nfRango.format(new Date(h + 'T00:00:00Z')) + ' (' + (act ? act.short : dias + ' días') + ')';
+    const custom = !act || drCustom;
     drList.replaceChildren();
+    const fmt = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', timeZone: 'UTC' });
     for (const p of PRESETS) {
-      const f = presetDesde(p, hoy);
+      const [f, t] = presetRango(p, hoy);
       const b = document.createElement('button'); b.type = 'button'; b.className = 'dr-opt'; b.setAttribute('role', 'option'); b.dataset.id = p.id;
-      b.setAttribute('aria-selected', String(!!act && act.id === p.id));
+      b.setAttribute('aria-selected', String(!!act && !drCustom && act.id === p.id));
       const l = document.createElement('span'); l.textContent = p.label;
-      const sm = document.createElement('small'); sm.textContent = 'desde ' + new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(f + 'T00:00:00Z'));
+      const sm = document.createElement('small'); sm.textContent = t ? fmt.format(new Date(f + 'T00:00:00Z')) + ' – ' + fmt.format(new Date(t + 'T00:00:00Z')) : 'desde ' + fmt.format(new Date(f + 'T00:00:00Z'));
       b.append(l, sm); drList.append(b);
     }
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'dr-opt'; c.setAttribute('role', 'option'); c.dataset.id = 'custom';
+    c.setAttribute('aria-selected', String(custom));
+    const cl = document.createElement('span'); cl.textContent = 'Personalizado'; c.append(cl); drList.append(c);
+    $('dr-custom').hidden = !custom;
   }
   function drAbrir(v) {
     drPop.hidden = !v; drBtn.setAttribute('aria-expanded', String(v));
@@ -563,10 +592,11 @@
   drBtn.addEventListener('click', () => drAbrir(drPop.hidden));
   drList.addEventListener('click', (ev) => {
     const b = ev.target.closest('.dr-opt'); if (!b) return;
+    if (b.dataset.id === 'custom') { drCustom = true; drPintar(); desde.focus(); return; }
     const p = PRESETS.find((x) => x.id === b.dataset.id);
-    dash.setParams({ desde: presetDesde(p, hoyIso()) }); drAbrir(false); drBtn.focus();
+    const [d, h] = presetRango(p, hoyIso());
+    drCustom = false; dash.setParams({ desde: d, hasta: h }); drAbrir(false); drBtn.focus();
   });
-  desde.addEventListener('change', () => { if (desde.value && desde.validity.valid) drAbrir(false); });
   drPop.addEventListener('keydown', (ev) => {
     const opts = [...drList.children], i = opts.indexOf(document.activeElement);
     if (ev.key === 'ArrowDown' && i >= 0) { ev.preventDefault(); opts[(i + 1) % opts.length].focus(); }
@@ -576,7 +606,7 @@
   document.addEventListener('pointerdown', (ev) => { if (!drPop.hidden && !$('dr').contains(ev.target)) drAbrir(false); });
   dash.onData(drPintar);
   drPintar();
-  dash.onData(() => { if (desde !== document.activeElement) showDesde(); showPlat(); });
+  dash.onData(() => { if (desde !== document.activeElement && hasta !== document.activeElement) showDesde(); showPlat(); });
 
   dash.draw('sel_cat', (sel) => {
     const g = dash.data('categorias_lista');
