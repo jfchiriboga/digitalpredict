@@ -4,7 +4,12 @@ Dashboard para analizar una marca y compararla con su competencia dentro de la m
 
 La versión publicada es un artefacto de Claude de tipo Dashboard: https://claude.ai/artifact/MrZjGBo8rDJqYCJmVfdVxb
 
-## Qué contiene
+## Dos versiones del mismo dashboard
+
+- **Artefacto de claude.ai** (`dashboard/`): respaldo del código publicado. Cada lector usa su propia conexión a Windsor.
+- **App para Vercel** (`public/` y `api/`): la misma página con un servidor propio que consulta Windsor con una clave. Ver *Despliegue en Vercel* más abajo.
+
+## Qué contiene el respaldo del artefacto
 
 | Archivo | Contenido |
 |---|---|
@@ -31,3 +36,41 @@ El formato de estos archivos es el del artefacto. No se ejecutan solos: sirven c
 - WAPE diario: suma de |TimesFM − estimado| por marca y día, dividida por la inversión estimada total.
 - La tabla trae datos diarios desde 2026-01-01 por marca y plataforma. Una carga completa son unas 120 mil filas, por eso la página consulta una categoría a la vez.
 - Cada lector necesita el conector Windsor en su propia cuenta de claude.ai. El nombre del conector en las consultas es `Windsor.ai`.
+
+## Despliegue en Vercel
+
+Estructura: `public/` (página y D3 incluido, sin CDN), `api/data.js` (función de servidor), `vercel.json`. No hay paso de build.
+
+### Variables de entorno (Vercel > Project Settings > Environment Variables)
+
+| Variable | Qué es |
+|---|---|
+| `WINDSOR_API_KEY` | Clave de la API de Windsor. Solo vive en el servidor; el navegador nunca la ve. |
+| `WINDSOR_ACCOUNT` | Cuenta del conector `mysql`. Por defecto `reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria`. |
+| `DASHBOARD_PASSWORD` | Contraseña que pide la página. Es obligatoria: sin ella la API responde 500 y no entrega datos. |
+
+### Cómo se protege
+
+- La clave de Windsor queda en el servidor. La función solo acepta parámetros validados (`tipo`, `categoria`, `desde`, `plataforma`) y arma ella misma la consulta; no reenvía consultas arbitrarias.
+- Sin la contraseña correcta la API responde 401. La página la pide al abrir y la guarda solo en la pestaña (`sessionStorage`).
+- Las respuestas llevan `Cache-Control: private` para que ninguna caché compartida las sirva a quien no tenga la contraseña.
+- La contraseña es compartida, no hay usuarios individuales. Si necesitas control por persona, activa Vercel Authentication o SSO sobre el despliegue y quita o cambia esta capa.
+
+### Probar en local
+
+```bash
+cp .env.example .env   # completar los tres valores
+npm run dev            # http://localhost:3000
+npm run test:handler   # pruebas de api/data.js con Windsor simulado
+```
+
+### Punto a verificar en el primer despliegue
+
+La función llama a `https://connectors.windsor.ai/mysql` con los parámetros `api_key`, `select_accounts`, `fields`, `date_from`, `date_to`, `date_filters`, `filters` y `_renderer=json`. Esa forma está escrita de memoria y no se pudo contrastar con la documentación de Windsor. Si Windsor responde error, la página muestra "No se pudo cargar" y el mensaje exacto de Windsor sale en la respuesta de `/api/data` (pestaña Network). Los nombres de parámetros están todos en `windsor()` dentro de `api/data.js`.
+
+La función vuelve a filtrar por categoría, fecha y plataforma, así que el resultado es correcto aunque Windsor ignore alguno de esos filtros. En ese caso solo cambia el tamaño de la descarga.
+
+### Límites
+
+- La respuesta de una función de Vercel no puede superar 4,5 MB. La API ya envía las filas en columnas con diccionarios; una categoría muy grande con muchos meses podría acercarse al límite. Si pasa, acota con el filtro Desde o por plataforma.
+- `maxDuration` está en 60 s; las consultas largas a Windsor pueden necesitarlo.
