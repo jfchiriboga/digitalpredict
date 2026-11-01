@@ -57,6 +57,7 @@ Estructura: `public/` (página y D3 incluido, sin CDN), `api/data.js` (función 
 - `/api/data` exige esa cookie: sin ella responde 401. Si falta `DASHBOARD_PASSWORD` responde 500 con un mensaje explícito.
 - Cambiar `DASHBOARD_PASSWORD` cierra todas las sesiones abiertas. `SESSION_SECRET` es opcional y se mezcla en la firma.
 - `DELETE /api/login` borra la cookie (cerrar sesión).
+- Cada intento queda en los logs de Vercel como una línea `[auth] {...}` (`login_ok`, `login_clave_incorrecta`, `login_falta_variable`, `data_sin_sesion`, etc.) con IP, navegador y despliegue. Nunca incluye la contraseña ni el token; en `login_clave_incorrecta` solo se registran longitudes, para detectar espacios o claves truncadas.
 - Las respuestas llevan `Cache-Control: private`. No hay límite de intentos de contraseña; si hace falta, usa el firewall de Vercel.
 - La contraseña es compartida, no hay usuarios individuales. Para control por persona, usa Vercel Authentication o SSO.
 

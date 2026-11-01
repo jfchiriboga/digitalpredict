@@ -43,9 +43,27 @@ function readCookie(req, name) {
 
 function isAuthenticated(req) { return tokenValid(readCookie(req, COOKIE)); }
 
+// Motivo para el registro del servidor: distingue "el navegador no envió cookie" de "cookie inválida o vencida".
+function sessionState(req) {
+  const t = readCookie(req, COOKIE);
+  return !t ? 'sin_cookie' : tokenValid(t) ? 'ok' : 'cookie_invalida';
+}
+
+// Una línea JSON por evento en los logs de Vercel. Nunca incluye la contraseña ni el token.
+function logEvent(req, event, extra) {
+  const h = (req && req.headers) || {};
+  const rec = Object.assign({
+    evento: event,
+    ip: String(h['x-forwarded-for'] || '').split(',')[0].trim() || undefined,
+    ua: String(h['user-agent'] || '').slice(0, 80) || undefined,
+    despliegue: process.env.VERCEL_DEPLOYMENT_ID || undefined,
+  }, extra);
+  (/^(login_ok|logout)$/.test(event) ? console.log : console.warn)('[auth] ' + JSON.stringify(rec));
+}
+
 function sessionCookie(req, token, maxAge = TTL_SECONDS) {
   const secure = String((req.headers || {})['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
   return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}` + (secure ? '; Secure' : '');
 }
 
-module.exports = { passwordMatches, issueToken, tokenValid, isAuthenticated, sessionCookie, password, TTL_SECONDS };
+module.exports = { passwordMatches, issueToken, tokenValid, isAuthenticated, sessionState, logEvent, sessionCookie, password, TTL_SECONDS };
