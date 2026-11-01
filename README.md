@@ -47,11 +47,18 @@ Estructura: `public/` (página y D3 incluido, sin CDN), `api/data.js` (función 
 |---|---|
 | `WINDSOR_API_KEY` | Clave de la API de Windsor. Solo vive en el servidor; el navegador nunca la ve. |
 | `WINDSOR_ACCOUNT` | Cuenta del conector `mysql`. Por defecto `reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria`. |
+| `DASHBOARD_PASSWORD` | Contraseña compartida del dashboard. Obligatoria: sin ella la API responde 500. |
+| `SESSION_SECRET` | Opcional. Texto aleatorio que se mezcla en la firma de la cookie de sesión. |
 
 ### Cómo se protege
 
 - La clave de Windsor queda en el servidor. La función solo acepta parámetros validados (`tipo`, `categoria`, `desde`, `plataforma`) y arma ella misma la consulta; no reenvía consultas arbitrarias.
-- La app no tiene autenticación propia: cualquiera con la URL ve los datos. Si necesitas restringir el acceso, activa Vercel Authentication o SSO sobre el despliegue.
+- La página pide una contraseña compartida al abrir. El navegador la envía una sola vez a `POST /api/login` (cuerpo JSON, admite cualquier carácter) y el servidor la compara con `DASHBOARD_PASSWORD`. Si coincide, responde con la cookie `dp_session` (HttpOnly, SameSite=Strict, Secure en HTTPS, 8 horas) firmada con HMAC.
+- `/api/data` exige esa cookie: sin ella responde 401. Si falta `DASHBOARD_PASSWORD` responde 500 con un mensaje explícito.
+- Cambiar `DASHBOARD_PASSWORD` cierra todas las sesiones abiertas. `SESSION_SECRET` es opcional y se mezcla en la firma.
+- `DELETE /api/login` borra la cookie (cerrar sesión).
+- Las respuestas llevan `Cache-Control: private`. No hay límite de intentos de contraseña; si hace falta, usa el firewall de Vercel.
+- La contraseña es compartida, no hay usuarios individuales. Para control por persona, usa Vercel Authentication o SSO.
 
 ### Probar en local
 

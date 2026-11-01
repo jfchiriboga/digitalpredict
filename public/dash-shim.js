@@ -63,7 +63,10 @@
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
       .then(function (x) {
         if (st.key !== k) return;
-        if (!x.r.ok) { st.status = 'error'; st.message = x.j.error || 'HTTP ' + x.r.status; st.key = null; }
+        if (x.r.status === 401) {
+          st.status = 'error'; st.message = 'auth'; st.key = null;
+          if (window.__dashNeedLogin) window.__dashNeedLogin();
+        } else if (!x.r.ok) { st.status = 'error'; st.message = x.j.error || 'HTTP ' + x.r.status; st.key = null; }
         else { st.data = s.parse(x.j); st.status = 'ok'; }
         schedule();
       })
