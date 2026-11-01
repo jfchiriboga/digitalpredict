@@ -23,7 +23,7 @@ El formato de estos archivos es el del artefacto. No se ejecutan solos: sirven c
 
 ## Qué muestra
 
-- Filtros: categoría, marca a analizar, competidores, plataforma (una a la vez) y fecha desde.
+- Filtros: categoría, marca a analizar, competidores, plataformas (una o varias) y fecha desde.
 - Indicadores de la marca: inversión estimada, cuota de la categoría, posición y variación de 28 días contra 28 previos.
 - Inversión semanal frente a la competencia, cuota, mezcla por plataforma y tabla comparativa.
 - Estimado frente a pronóstico TimesFM, con el error WAPE diario por marca.
