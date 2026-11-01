@@ -2,6 +2,8 @@
 // Función de servidor (Vercel). El navegador nunca ve la clave de Windsor:
 // llama a /api/data y esta función consulta Windsor con parámetros validados.
 
+const auth = require('./_auth');
+
 const WINDSOR_URL = 'https://connectors.windsor.ai/mysql';
 const DEFAULT_ACCOUNT = 'reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria';
 const PLATAFORMAS = ['Google Ads', 'Meta', 'TikTok', 'YouTube', 'Programatic', 'X'];
@@ -31,10 +33,12 @@ async function windsor({ fields, from, to, filters }) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.setHeader('Cache-Control', 'private, max-age=300');
   const fail = (code, error) => res.status(code).json({ error });
   try {
+    if (!auth.password()) return fail(500, 'Falta la variable DASHBOARD_PASSWORD en el servidor.');
     if (!process.env.WINDSOR_API_KEY) return fail(500, 'Falta la variable WINDSOR_API_KEY en el servidor.');
+    if (!auth.isAuthenticated(req)) return fail(401, 'Sesión no iniciada o vencida.');
 
     const q = req.query || {};
     const today = new Date();
