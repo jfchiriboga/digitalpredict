@@ -110,6 +110,25 @@
   .ci .foot p { margin: 0; }
   .ci .hashtag { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: 20px; margin: 16px 0 0; background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
+  /* Selector de periodo */
+  #filtros { z-index: 20; }
+  .ci .dr { position: relative; display: flex; flex-direction: column; gap: 4px; }
+  .ci .dr-lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ci .dr-btn { display: inline-flex; align-items: center; gap: 10px; font-size: var(--cds-font-size-body); font-weight: 500; padding: 8px 14px; border-radius: var(--cds-radius); background: rgba(255,255,255,.06); }
+  .ci .dr-btn svg:first-child { color: var(--misiva-mint); flex: none; }
+  .ci .dr-btn .dr-caret { transition: transform .3s var(--ease); flex: none; opacity: .7; }
+  .ci .dr-btn[aria-expanded=true] { border-color: var(--misiva-mint); box-shadow: var(--glow-mint-soft); }
+  .ci .dr-btn[aria-expanded=true] .dr-caret { transform: rotate(180deg); }
+  .ci .dr-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; width: min(22rem, calc(100vw - 2 * var(--dash-gutter))); padding: 8px; border-radius: 20px; background: rgba(10,25,68,.95); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); }
+  .ci .dr-pop[hidden] { display: none; }
+  @media (max-width: 600px) { .ci .dr, .ci .dr-btn { width: 100%; } .ci .dr-btn { justify-content: flex-start; } .ci .dr-pop { position: static; width: 100%; margin-top: 8px; } }
+  .ci .dr-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-radius: 14px; background: none; text-align: left; font-size: 15px; font-weight: 500; }
+  .ci .dr-opt:hover, .ci .dr-opt:focus-visible { background: rgba(255,255,255,.07); border-color: transparent; box-shadow: none; transform: none; }
+  .ci .dr-opt[aria-selected=true] { background: rgba(86,225,232,.14); color: var(--misiva-mint-light); }
+  .ci .dr-opt small { font-size: 12px; font-weight: 500; color: var(--color-fg-muted); }
+  .ci .dr-custom { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding: 12px 14px 8px; border-top: 1px solid var(--color-border-line); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ci .dr-custom input { width: 100%; }
+
   /* Portada: buscador de marca con autocompletado */
   .ci[hidden], #landing[hidden] { display: none; }
   #landing { min-height: calc(100vh - 72px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 28px; max-width: 1080px; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
@@ -203,9 +222,20 @@
           <option value="X">X</option>
         </select>
       </label>
-      <label>Desde
-        <input id="f-desde" type="date" min="2026-01-01" max="2099-12-31" aria-label="Desde">
-      </label>
+      <div class="dr" id="dr">
+        <span class="dr-lbl" id="dr-lbl">Periodo</span>
+        <button id="dr-btn" class="dr-btn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="dr-lbl dr-txt">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span id="dr-txt">—</span>
+          <svg class="dr-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="dr-pop" id="dr-pop" hidden>
+          <div role="listbox" aria-labelledby="dr-lbl" id="dr-list"></div>
+          <label class="dr-custom">Desde una fecha
+            <input id="f-desde" type="date" min="2026-01-01" max="2099-12-31" aria-label="Desde una fecha">
+          </label>
+        </div>
+      </div>
       <button id="f-reset" type="button">Restablecer</button>
       <button id="f-cambiar" type="button">Cambiar marca</button>
     </div>
@@ -461,6 +491,69 @@
     const n = b.dataset.name;
     dash.setParams({ competidores: st.comps.includes(n) ? st.comps.filter((x) => x !== n) : [...st.comps, n] });
   });
+
+  // Selector de periodo (reemplaza el campo «Desde»): atajos relativos a hoy.
+  const DATA_START = '2026-01-01';
+  const nfRango = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const hoyIso = () => { const n = new Date(); return iso(new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()))); };
+  const restaMeses = (hoy, m) => {
+    const d = new Date(hoy + 'T00:00:00Z'), dia = d.getUTCDate();
+    d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - m);
+    d.setUTCDate(Math.min(dia, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));
+    return iso(d);
+  };
+  const restaDias = (hoy, n) => iso(new Date(new Date(hoy + 'T00:00:00Z').getTime() - n * 86400000));
+  const PRESETS = [
+    { id: 'm1', label: 'Último mes', short: '1 mes', from: (h) => restaMeses(h, 1) },
+    { id: 'd28', label: 'Últimos 28 días', short: '28 días', from: (h) => restaDias(h, 28) },
+    { id: 'm2', label: 'Últimos 2 meses', short: '2 meses', from: (h) => restaMeses(h, 2) },
+    { id: 'm3', label: 'Últimos 3 meses', short: '3 meses', from: (h) => restaMeses(h, 3) },
+    { id: 'm6', label: 'Últimos 6 meses', short: '6 meses', from: (h) => restaMeses(h, 6) },
+    { id: 'm12', label: 'Últimos 12 meses', short: '12 meses', from: (h) => restaMeses(h, 12) },
+    { id: 'todo', label: 'Todo el historial', short: 'Todo', from: () => DATA_START },
+  ];
+  const presetDesde = (p, hoy) => { const f = p.from(hoy); return f < DATA_START ? DATA_START : f; }; // los datos empiezan el 1 ene 2026
+  const drBtn = $('dr-btn'), drPop = $('dr-pop'), drList = $('dr-list'), drTxt = $('dr-txt');
+  const drActivo = () => {
+    const hoy = hoyIso(), d = dash.params().desde;
+    if (d === DATA_START) return PRESETS[PRESETS.length - 1]; // el rango completo siempre se llama «Todo»
+    return PRESETS.find((p) => p.id !== 'todo' && p.from(hoy) === d) || null;
+  };
+  function drPintar() {
+    const hoy = hoyIso(), d = dash.params().desde || DATA_START, act = drActivo();
+    const dias = Math.max(1, Math.round((new Date(hoy) - new Date(d)) / 86400000));
+    drTxt.textContent = nfRango.format(new Date(d + 'T00:00:00Z')) + ' – ' + nfRango.format(new Date(hoy + 'T00:00:00Z')) + ' (' + (act ? act.short : dias + ' días') + ')';
+    drList.replaceChildren();
+    for (const p of PRESETS) {
+      const f = presetDesde(p, hoy);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'dr-opt'; b.setAttribute('role', 'option'); b.dataset.id = p.id;
+      b.setAttribute('aria-selected', String(!!act && act.id === p.id));
+      const l = document.createElement('span'); l.textContent = p.label;
+      const sm = document.createElement('small'); sm.textContent = 'desde ' + new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(f + 'T00:00:00Z'));
+      b.append(l, sm); drList.append(b);
+    }
+  }
+  function drAbrir(v) {
+    drPop.hidden = !v; drBtn.setAttribute('aria-expanded', String(v));
+    if (v) { const sel = drList.querySelector('[aria-selected=true]') || drList.firstElementChild; if (sel) sel.focus(); }
+  }
+  drBtn.addEventListener('click', () => drAbrir(drPop.hidden));
+  drList.addEventListener('click', (ev) => {
+    const b = ev.target.closest('.dr-opt'); if (!b) return;
+    const p = PRESETS.find((x) => x.id === b.dataset.id);
+    dash.setParams({ desde: presetDesde(p, hoyIso()) }); drAbrir(false); drBtn.focus();
+  });
+  desde.addEventListener('change', () => { if (desde.value && desde.validity.valid) drAbrir(false); });
+  drPop.addEventListener('keydown', (ev) => {
+    const opts = [...drList.children], i = opts.indexOf(document.activeElement);
+    if (ev.key === 'ArrowDown' && i >= 0) { ev.preventDefault(); opts[(i + 1) % opts.length].focus(); }
+    else if (ev.key === 'ArrowUp' && i >= 0) { ev.preventDefault(); opts[(i - 1 + opts.length) % opts.length].focus(); }
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !drPop.hidden) { drAbrir(false); drBtn.focus(); } });
+  document.addEventListener('pointerdown', (ev) => { if (!drPop.hidden && !$('dr').contains(ev.target)) drAbrir(false); });
+  dash.onData(drPintar);
+  drPintar();
   dash.onData(() => { if (desde !== document.activeElement) showDesde(); plat.value = dash.params().plataforma ?? ''; });
 
   dash.draw('sel_cat', (sel) => {
@@ -542,7 +635,7 @@
     el.classList.remove('dash-skeleton');
     const sem = g.data.filter((r) => r.completa && st.list.includes(r.marca));
     const weeks = [...new Set(g.data.filter((r) => r.completa).map((r) => r.semana))].sort();
-    if (weeks.length < 2) { CMP.empty(el, 'Hacen falta al menos dos semanas completas. Amplía el rango en Desde.'); return; }
+    if (weeks.length < 2) { CMP.empty(el, 'Hacen falta al menos dos semanas completas. Amplía el rango en Periodo.'); return; }
     const W = Math.max(el.clientWidth, 280), H = 320, narrow = W < 560;
     const m = { l: 52, r: narrow ? 8 : 132, t: 12, b: 28 };
     const series = st.list.map((n, i) => {
@@ -622,7 +715,7 @@
     el.classList.remove('dash-skeleton');
     const all = g.data.filter((r) => r.completa);
     const weeks = [...new Set(all.map((r) => r.semana))].sort();
-    if (weeks.length < 2) { CMP.empty(el, 'Hacen falta al menos dos semanas completas. Amplía el rango en Desde.'); return; }
+    if (weeks.length < 2) { CMP.empty(el, 'Hacen falta al menos dos semanas completas. Amplía el rango en Periodo.'); return; }
     const mine = new Map(all.filter((r) => r.marca === st.marca).map((r) => [r.semana, r]));
     const W = Math.max(el.clientWidth, 280), H = 300, narrow = W < 560;
     const m = { l: 52, r: narrow ? 8 : 112, t: 12, b: 28 };
