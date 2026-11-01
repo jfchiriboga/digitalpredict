@@ -236,19 +236,6 @@
     <div class="chart" data-draw="grafico_semanal" data-source="semanal"></div>
   </section>
 
-  <section class="card" id="pronostico">
-    <div>
-      <h2>Estimado frente a pronóstico TimesFM</h2>
-      <p class="note" data-draw="nota_tfm" data-source="marcas_cat">—</p>
-    </div>
-    <div class="chart" data-draw="grafico_tfm" data-source="semanal"></div>
-    <div>
-      <h2>Error de TimesFM por marca</h2>
-      <p class="note">WAPE diario: suma de las diferencias absolutas día a día entre TimesFM y el estimado, dividida por la inversión estimada. Menor es mejor.</p>
-    </div>
-    <div class="chart short" data-draw="grafico_error" data-source="marcas_cat"></div>
-  </section>
-
   <div class="grid2">
     <section class="card" id="cuota">
       <div>
@@ -289,6 +276,19 @@
         <tbody data-draw="tabla"></tbody>
       </table>
     </div>
+  </section>
+
+  <section class="card" id="pronostico">
+    <div>
+      <h2>Estimado frente a pronóstico TimesFM</h2>
+      <p class="note" data-draw="nota_tfm" data-source="marcas_cat">—</p>
+    </div>
+    <div class="chart" data-draw="grafico_tfm" data-source="semanal"></div>
+    <div>
+      <h2>Error de TimesFM por marca</h2>
+      <p class="note">WAPE diario: suma de las diferencias absolutas día a día entre TimesFM y el estimado, dividida por la inversión estimada. Menor es mejor.</p>
+    </div>
+    <div class="chart short" data-draw="grafico_error" data-source="marcas_cat"></div>
   </section>
 
   <footer class="foot">
