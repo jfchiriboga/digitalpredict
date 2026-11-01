@@ -523,6 +523,7 @@
   };
   const restaDias = (hoy, n) => iso(new Date(new Date(hoy + 'T00:00:00Z').getTime() - n * 86400000));
   const PRESETS = [
+    { id: 'd30', label: 'Últimos 30 días', short: '30 días', from: (h) => restaDias(h, 30) },
     { id: 'm1', label: 'Último mes', short: '1 mes', from: (h) => restaMeses(h, 1) },
     { id: 'd28', label: 'Últimos 28 días', short: '28 días', from: (h) => restaDias(h, 28) },
     { id: 'm2', label: 'Últimos 2 meses', short: '2 meses', from: (h) => restaMeses(h, 2) },
