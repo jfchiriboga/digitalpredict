@@ -73,6 +73,7 @@
   .ci .dr-btn { width: 100%; }
   .ci .ctl select, .ci .ctl #f-marca { width: 100%; }
   .ci #f-marca { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg); background: rgba(255,255,255,.06); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 8px 16px; max-width: 100%; }
+  .ci #f-marca { padding-right: 38px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23b8c2e0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
   .ci #f-marca::placeholder { color: var(--color-fg-muted); }
   .ci .mk-wrap { position: relative; }
   .ci .mk-list { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; width: min(24rem, calc(100vw - 2 * var(--dash-gutter))); margin: 0; padding: 8px; list-style: none; border-radius: 20px; background: rgba(10,25,68,.95); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); border: 1px solid var(--color-border-line); max-height: 18rem; overflow: auto; }
@@ -910,7 +911,7 @@
     else if (hint.textContent.startsWith('No se pudo')) hint.textContent = '';
   });
 
-  function buscar(q) {
+  function buscar(q, lim = MAX) {
     const n = norm(q); if (!n) return [];
     const g = dash.data('marcas'); if (g.status !== 'ok') return [];
     const out = [];
@@ -920,7 +921,7 @@
       out.push({ r, rank: i === 0 ? 0 : m[i - 1] === ' ' ? 1 : 2 });
     }
     out.sort((a, b) => a.rank - b.rank || a.r.marca.length - b.r.marca.length || a.r.marca.localeCompare(b.r.marca, 'es'));
-    return out.slice(0, MAX);
+    return out.slice(0, lim);
   }
   function resaltar(el, txt, q) {
     const n = norm(q), i = norm(txt).indexOf(n);
@@ -999,39 +1000,56 @@
     dash.setParams({ categoria: r.categoria, marca: r.marca, competidores: null }); // la categoría se completa con la de la marca
     mk.blur();
   }
+  // Dos formas de elegir: escribir para filtrar o abrir la lista completa (sin escribir).
+  let mkTecleo = false;
+  function mkListaCompleta() {
+    const g = dash.data('marcas'); if (g.status !== 'ok') return [];
+    const st = CMP.state(), cat = st ? st.categoria : '';
+    return g.data.slice().sort((a, b) => (a.categoria === cat ? 0 : 1) - (b.categoria === cat ? 0 : 1) || a.marca.localeCompare(b.marca, 'es')).slice(0, 400).map((r) => ({ r }));
+  }
   function mkPintar() {
-    mkShown = buscar(mk.value);
+    mkShown = mkTecleo && norm(mk.value) ? buscar(mk.value, 30) : mkListaCompleta();
     mkList.replaceChildren();
-    if (!norm(mk.value)) return mkCerrar();
     if (!mkShown.length) {
       const li = document.createElement('li'); li.className = 'mk-opt none'; li.setAttribute('role', 'option'); li.setAttribute('aria-disabled', 'true');
       li.textContent = dash.data('marcas').status === 'ok' ? 'No encontramos esa marca' : 'Cargando marcas…';
       mkList.append(li);
     }
+    const actual = (CMP.state() || {}).marca;
     mkShown.forEach(({ r }, k) => {
       const li = document.createElement('li'); li.className = 'mk-opt'; li.id = 'mk-o' + k; li.setAttribute('role', 'option'); li.setAttribute('aria-selected', 'false');
-      const nm = document.createElement('span'); resaltar(nm, r.marca, mk.value);
+      const nm = document.createElement('span');
+      if (mkTecleo && norm(mk.value)) resaltar(nm, r.marca, mk.value); else nm.textContent = r.marca;
       const ct = document.createElement('span'); ct.className = 'cat'; ct.textContent = r.categoria;
       li.append(nm, ct);
       li.addEventListener('pointerdown', (ev) => { ev.preventDefault(); mkElegir(r); });
       li.addEventListener('pointermove', () => { if (mkActive !== k) mkMarcar(k); });
       mkList.append(li);
+      if (!mkTecleo && r.marca === actual && r.categoria === (CMP.state() || {}).categoria) li.dataset.cur = '1';
     });
     mkList.hidden = false; mk.setAttribute('aria-expanded', 'true'); mkActive = -1;
+    const cur = mkList.querySelector('[data-cur]'); if (cur) cur.scrollIntoView({ block: 'center' });
   }
   dash.draw('sel_marca', (el) => { if (el !== document.activeElement) mkRestaurar(); });
-  mk.addEventListener('focus', () => mk.select());
-  mk.addEventListener('input', mkPintar);
-  mk.addEventListener('blur', () => { mkCerrar(); mkRestaurar(); });
+  mk.addEventListener('focus', () => { mkTecleo = false; mk.select(); mkPintar(); });
+  // Antes de escribir, un clic siempre selecciona todo el texto (no coloca el cursor) y abre la lista.
+  mk.addEventListener('mousedown', (ev) => {
+    if (mkTecleo) return;
+    ev.preventDefault(); mk.focus(); mk.select();
+    if (mkList.hidden) mkPintar();
+  });
+  mk.addEventListener('input', () => { mkTecleo = true; mkPintar(); });
+  mk.addEventListener('blur', () => { mkCerrar(); mkRestaurar(); mkTecleo = false; });
   mk.addEventListener('keydown', (ev) => {
     if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-      if (mkList.hidden) mkPintar();
+      if (mkList.hidden) { mkTecleo = false; mkPintar(); }
       const m = mkShown.length; if (!m) return; ev.preventDefault();
       mkMarcar(ev.key === 'ArrowDown' ? (mkActive + 1) % m : (mkActive - 1 + m) % m);
     } else if (ev.key === 'Escape') { mkCerrar(); mkRestaurar(); mk.blur(); }
     else if (ev.key === 'Enter') {
       ev.preventDefault();
-      const q = norm(mk.value), res = mkShown.length ? mkShown : buscar(mk.value);
+      if (!mkTecleo && mkActive < 0) { mkCerrar(); return; } // sin escribir ni elegir: se conserva la marca actual
+      const q = norm(mk.value), res = mkTecleo ? buscar(mk.value, 30) : mkShown;
       const pick = mkActive >= 0 && mkShown[mkActive] ? mkShown[mkActive] : res.find((x) => norm(x.r.marca) === q) || res[0];
       if (pick) mkElegir(pick.r);
     }
