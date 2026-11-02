@@ -48,7 +48,19 @@ Estructura: `public/` (página y D3 incluido, sin CDN), `api/data.js` (función 
 | `WINDSOR_API_KEY` | Clave de la API de Windsor. Solo vive en el servidor; el navegador nunca la ve. |
 | `WINDSOR_ACCOUNT` | Cuenta del conector `mysql`. Por defecto `reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria`. |
 | `DASHBOARD_PASSWORD` | Contraseña compartida del dashboard. Obligatoria: sin ella la API responde 500. |
+| `KV_REST_API_URL` y `KV_REST_API_TOKEN` | Opcionales. Las define la integración de Upstash Redis de Vercel (también se aceptan `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`). Activan el caché del índice de marcas y categorías. |
 | `SESSION_SECRET` | Opcional. Texto aleatorio que se mezcla en la firma de la cookie de sesión. |
+
+### Caché de marcas y categorías (Upstash)
+
+`/api/data?tipo=marcas` y `tipo=cats` salen de un único índice marca → categoría (últimos 30 días) guardado en Upstash Redis bajo la clave `dp:indice:v1`. Funciona así (`api/_cache.js`):
+
+- Si el índice tiene menos de 6 horas, se sirve desde Redis sin tocar Windsor.
+- Si venció, se consulta Windsor y se guarda de nuevo. Redis lo conserva 7 días.
+- Si Windsor falla y hay un índice anterior, se sirve ese. Si Redis no está configurado o falla, se consulta Windsor directo como antes.
+- La serie por categoría (`tipo=serie`) no se guarda en caché.
+
+Para forzar la actualización, borra la clave `dp:indice:v1` desde la consola de Upstash.
 
 ### Cómo se protege
 

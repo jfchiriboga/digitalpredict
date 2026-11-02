@@ -84,6 +84,43 @@ const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, '')
   assert.deepStrictEqual(mm.body.r.map((r) => mm.body.m[r[1]]).sort(), ['A', 'B']);
   assert.strictEqual((await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', plataforma: 'Meta,Radio' }, ck)).code, 400);
 
+  // caché en Upstash: la primera llamada va a Windsor, las siguientes a Redis
+  {
+    const store = new Map(); let windsorCalls = 0, redisDown = false, windsorDown = false;
+    const baseFetch = global.fetch;
+    global.fetch = async (url, opts) => {
+      if (String(url).startsWith('https://redis.test')) {
+        if (redisDown) throw new Error('redis caído');
+        const [cmd, key, val] = JSON.parse(opts.body);
+        assert.strictEqual(opts.headers.authorization, 'Bearer tok');
+        if (cmd === 'GET') return { ok: true, status: 200, json: async () => ({ result: store.get(key) || null }) };
+        store.set(key, val); return { ok: true, status: 200, json: async () => ({ result: 'OK' }) };
+      }
+      windsorCalls++;
+      if (windsorDown) throw new Error('windsor caído');
+      return baseFetch(url, opts);
+    };
+    process.env.KV_REST_API_URL = 'https://redis.test'; process.env.KV_REST_API_TOKEN = 'tok';
+    const m1 = await callData({ tipo: 'marcas' }, ck);
+    assert.deepStrictEqual(m1.body.marcas, [['A', 'BANCOS'], ['B', 'BANCOS'], ['C', 'OTRA']]);
+    assert.strictEqual(windsorCalls, 1); assert.strictEqual(store.size, 1);
+    const c2 = await callData({ tipo: 'cats' }, ck);                 // categorías salen del mismo índice
+    assert.deepStrictEqual(c2.body.cats, ['BANCOS', 'OTRA']); assert.strictEqual(windsorCalls, 1);
+    // dato vencido + Windsor caído: se sirve el índice anterior
+    const k = [...store.keys()][0], v = JSON.parse(store.get(k)); v.at -= 7 * 3600 * 1000; store.set(k, JSON.stringify(v));
+    windsorDown = true;
+    assert.strictEqual((await callData({ tipo: 'marcas' }, ck)).body.marcas.length, 3);
+    // sin dato y Windsor caído: error
+    store.clear(); assert.strictEqual((await callData({ tipo: 'marcas' }, ck)).code, 502);
+    // Redis caído: funciona directo con Windsor
+    windsorDown = false; redisDown = true;
+    assert.strictEqual((await callData({ tipo: 'marcas' }, ck)).body.marcas.length, 3);
+    // sin variables de Redis: igual
+    delete process.env.KV_REST_API_URL; delete process.env.KV_REST_API_TOKEN;
+    assert.strictEqual((await callData({ tipo: 'cats' }, ck)).code, 200);
+    global.fetch = baseFetch;
+  }
+
   // variables faltantes
   delete process.env.SESSION_SECRET;
   assert.strictEqual((await callLogin('POST', { password: 'secreto' })).code, 200); // SESSION_SECRET es opcional
