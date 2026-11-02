@@ -69,9 +69,19 @@
   .ci select option { background: #0A1944; color: #fff; }
   .ci select { min-width: min(100%, 14rem); }
   /* Categoría, marca y periodo: misma altura y mismo ancho; etiquetas alineadas arriba */
-  .ci .ctl select, .ci .dr-btn { box-sizing: border-box; height: 2.75rem; min-width: min(100%, 14rem); line-height: 1.2; }
+  .ci .ctl select, .ci .ctl #f-marca, .ci .dr-btn { box-sizing: border-box; height: 2.75rem; min-width: min(100%, 14rem); line-height: 1.2; }
   .ci .dr-btn { width: 100%; }
-  .ci .ctl select { width: 100%; }
+  .ci .ctl select, .ci .ctl #f-marca { width: 100%; }
+  .ci #f-marca { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg); background: rgba(255,255,255,.06); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 8px 16px; max-width: 100%; }
+  .ci #f-marca::placeholder { color: var(--color-fg-muted); }
+  .ci .mk-wrap { position: relative; }
+  .ci .mk-list { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; width: min(24rem, calc(100vw - 2 * var(--dash-gutter))); margin: 0; padding: 8px; list-style: none; border-radius: 20px; background: rgba(10,25,68,.95); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); border: 1px solid var(--color-border-line); max-height: 18rem; overflow: auto; }
+  .ci .mk-list[hidden] { display: none; }
+  .ci .mk-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 14px; cursor: pointer; font-size: 14px; color: var(--color-fg); }
+  .ci .mk-opt[aria-selected=true] { background: rgba(86,225,232,.14); }
+  .ci .mk-opt mark { background: none; color: var(--misiva-mint); font-weight: 600; }
+  .ci .mk-opt .cat { flex: none; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--color-fg-muted); }
+  .ci .mk-opt.none { cursor: default; color: var(--color-fg-muted); }
   .ci .ctl > label { width: 14rem; max-width: 100%; }
   .ci .dr { width: 19rem; max-width: 100%; } /* más largo: el rango y su nombre caben en una línea */
   .ci .ctl > label, .ci .dr-lbl { line-height: 1.2; }
@@ -188,7 +198,7 @@
   @media (max-width: 520px) { .ci .brow { grid-template-columns: 6rem 1fr 3.4rem; } }
   /* Cabecera de selección: textos 10 % más pequeños */
   .ci #filtros .ctl label, .ci #filtros .dr-lbl, .ci #filtros .plbl { font-size: calc(var(--cds-font-size-caption) * .9); }
-  .ci #filtros .ctl select, .ci #filtros .dr-btn { font-size: calc(var(--cds-font-size-body) * .9); }
+  .ci #filtros .ctl select, .ci #filtros #f-marca, .ci #filtros .dr-btn { font-size: calc(var(--cds-font-size-body) * .9); }
   .ci #filtros .plats .chip { font-size: calc(var(--cds-font-size-caption) * .9); }
 </style>
 <script src="/vendor/d3.min.js"></script>
@@ -227,7 +237,10 @@
         <select id="f-cat" data-draw="sel_cat" data-source="categorias_lista" aria-label="Categoría"></select>
       </label>
       <label>Marca a analizar
-        <select id="f-marca" data-draw="sel_marca" data-source="marcas_cat" aria-label="Marca a analizar"></select>
+        <div class="mk-wrap">
+          <input id="f-marca" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f-marca-list" aria-label="Marca a analizar" placeholder="Escribe una marca" autocomplete="off" spellcheck="false" data-draw="sel_marca" data-source="marcas_cat">
+          <ul class="mk-list" id="f-marca-list" role="listbox" aria-label="Marcas sugeridas" hidden></ul>
+        </div>
       </label>
       <div class="dr" id="dr">
         <span class="dr-lbl" id="dr-lbl">Periodo</span>
@@ -617,12 +630,6 @@
     sel.value = actual ?? '';
     sel.onchange = () => dash.setParams({ categoria: sel.value, marca: null, competidores: null });
   });
-  dash.draw('sel_marca', (sel) => {
-    const st = CMP.state();
-    sel.replaceChildren(...(st ? st.rows.map((r) => new Option(r.marca, r.marca)) : []));
-    if (st) sel.value = st.marca;
-    sel.onchange = () => dash.setParams({ marca: sel.value, competidores: null });
-  });
   dash.draw('chips', (box) => {
     const st = CMP.state(); box.replaceChildren();
     if (!st) return;
@@ -974,6 +981,60 @@
     const res = buscar(input.value);
     const pick = active >= 0 && shown[active] ? shown[active] : res.find((x) => norm(x.r.marca) === q) || res[0];
     if (pick) elegir(pick.r); else hint.textContent = 'No encontramos esa marca. Prueba con otro nombre.';
+  });
+
+  // Filtro superior: la marca se escribe y la categoría se completa sola.
+  const mk = $('f-marca'), mkList = $('f-marca-list');
+  let mkShown = [], mkActive = -1;
+  const mkCerrar = () => { mkList.hidden = true; mk.setAttribute('aria-expanded', 'false'); mk.removeAttribute('aria-activedescendant'); mkActive = -1; };
+  const mkRestaurar = () => { const st = CMP.state(); mk.value = st ? st.marca : ''; };
+  function mkMarcar(i) {
+    mkActive = i;
+    [...mkList.children].forEach((li, k) => li.setAttribute('aria-selected', String(k === i)));
+    if (i >= 0) { mk.setAttribute('aria-activedescendant', 'mk-o' + i); mkList.children[i].scrollIntoView({ block: 'nearest' }); }
+    else mk.removeAttribute('aria-activedescendant');
+  }
+  function mkElegir(r) {
+    mkCerrar(); mk.value = r.marca;
+    dash.setParams({ categoria: r.categoria, marca: r.marca, competidores: null }); // la categoría se completa con la de la marca
+    mk.blur();
+  }
+  function mkPintar() {
+    mkShown = buscar(mk.value);
+    mkList.replaceChildren();
+    if (!norm(mk.value)) return mkCerrar();
+    if (!mkShown.length) {
+      const li = document.createElement('li'); li.className = 'mk-opt none'; li.setAttribute('role', 'option'); li.setAttribute('aria-disabled', 'true');
+      li.textContent = dash.data('marcas').status === 'ok' ? 'No encontramos esa marca' : 'Cargando marcas…';
+      mkList.append(li);
+    }
+    mkShown.forEach(({ r }, k) => {
+      const li = document.createElement('li'); li.className = 'mk-opt'; li.id = 'mk-o' + k; li.setAttribute('role', 'option'); li.setAttribute('aria-selected', 'false');
+      const nm = document.createElement('span'); resaltar(nm, r.marca, mk.value);
+      const ct = document.createElement('span'); ct.className = 'cat'; ct.textContent = r.categoria;
+      li.append(nm, ct);
+      li.addEventListener('pointerdown', (ev) => { ev.preventDefault(); mkElegir(r); });
+      li.addEventListener('pointermove', () => { if (mkActive !== k) mkMarcar(k); });
+      mkList.append(li);
+    });
+    mkList.hidden = false; mk.setAttribute('aria-expanded', 'true'); mkActive = -1;
+  }
+  dash.draw('sel_marca', (el) => { if (el !== document.activeElement) mkRestaurar(); });
+  mk.addEventListener('focus', () => mk.select());
+  mk.addEventListener('input', mkPintar);
+  mk.addEventListener('blur', () => { mkCerrar(); mkRestaurar(); });
+  mk.addEventListener('keydown', (ev) => {
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      if (mkList.hidden) mkPintar();
+      const m = mkShown.length; if (!m) return; ev.preventDefault();
+      mkMarcar(ev.key === 'ArrowDown' ? (mkActive + 1) % m : (mkActive - 1 + m) % m);
+    } else if (ev.key === 'Escape') { mkCerrar(); mkRestaurar(); mk.blur(); }
+    else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const q = norm(mk.value), res = mkShown.length ? mkShown : buscar(mk.value);
+      const pick = mkActive >= 0 && mkShown[mkActive] ? mkShown[mkActive] : res.find((x) => norm(x.r.marca) === q) || res[0];
+      if (pick) mkElegir(pick.r);
+    }
   });
 
   $('lp-skip').addEventListener('click', () => { cerrar(); input.value = ''; dash.setParams({ ver: 'analisis' }); window.scrollTo(0, 0); });
