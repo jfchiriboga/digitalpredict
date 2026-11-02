@@ -3,6 +3,7 @@
 // llama a /api/data y esta función consulta Windsor con parámetros validados.
 
 const auth = require('./_auth');
+const cache = require('./_cache');
 
 const WINDSOR_URL = 'https://connectors.windsor.ai/mysql';
 const DEFAULT_ACCOUNT = 'reporting01.markplan.com__infomedia_marts__mart_digital_predict_industria';
@@ -32,6 +33,17 @@ async function windsor({ fields, from, to, filters }) {
   return rows;
 }
 
+// Pares únicos [marca, categoría], ordenados por marca.
+function buildPairs(rows) {
+  const seen = new Set(), pairs = [];
+  for (const r of rows) {
+    if (!r.marcas || !r.categorias) continue;
+    const k = r.categorias + '\u0000' + r.marcas;
+    if (!seen.has(k)) { seen.add(k); pairs.push([r.marcas, r.categorias]); }
+  }
+  return pairs.sort((a, b) => a[0].localeCompare(b[0], 'es'));
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, max-age=300');
   const fail = (code, error) => res.status(code).json({ error });
@@ -43,25 +55,25 @@ module.exports = async function handler(req, res) {
     const q = req.query || {};
     const today = new Date();
 
-    if (q.tipo === 'cats') {
-      const from = isoDay(new Date(today.getTime() - 30 * 86400000));
-      const rows = await windsor({ fields: ['categorias'], from, to: isoDay(today) });
-      const cats = [...new Set(rows.map((r) => r.categorias).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
-      return res.status(200).json({ cats });
-    }
-
-    if (q.tipo === 'marcas') {
-      // Índice marca -> categoría para el autocompletado de la portada (últimos 30 días).
-      const from = isoDay(new Date(today.getTime() - 30 * 86400000));
-      const rows = await windsor({ fields: ['categorias', 'marcas'], from, to: isoDay(today) });
-      const seen = new Set(), pairs = [];
-      for (const r of rows) {
-        if (!r.marcas || !r.categorias) continue;
-        const k = r.categorias + '\u0000' + r.marcas;
-        if (!seen.has(k)) { seen.add(k); pairs.push([r.marcas, r.categorias]); }
+    if (q.tipo === 'cats' || q.tipo === 'marcas') {
+      // Una sola consulta (últimos 30 días) alimenta categorías y marcas. Se guarda en Upstash:
+      // los usuarios siguientes leen de Redis en vez de esperar a Windsor.
+      const cached = await cache.read();
+      let pairs = cached && cached.pairs;
+      if (!cache.isFresh(cached)) {
+        try {
+          const from = isoDay(new Date(today.getTime() - 30 * 86400000));
+          const rows = await windsor({ fields: ['categorias', 'marcas'], from, to: isoDay(today) });
+          pairs = buildPairs(rows);
+          if (pairs.length) await cache.write(pairs);
+        } catch (e) {
+          if (!pairs) throw e;                       // sin respaldo: se informa el error
+          console.warn('[cache] Windsor falló, se sirve el índice anterior:', e.message);
+        }
       }
-      pairs.sort((a, b) => a[0].localeCompare(b[0], 'es'));
-      return res.status(200).json({ marcas: pairs });
+      if (q.tipo === 'marcas') return res.status(200).json({ marcas: pairs });
+      const cats = [...new Set(pairs.map((p) => p[1]))].sort((a, b) => a.localeCompare(b, 'es'));
+      return res.status(200).json({ cats });
     }
 
     if (q.tipo === 'serie') {
