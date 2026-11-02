@@ -159,9 +159,8 @@
   .ci[hidden], #landing[hidden] { display: none; }
   #landing { min-height: calc(100vh - 72px); min-height: calc(100svh - 72px); /* svh: altura visible en móvil, sin contar la barra del navegador */ display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 28px; max-width: 1080px; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
   #landing .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--misiva-mint); margin: 0; }
-  #landing h1 { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: clamp(30px, 4.875vw, 66px); line-height: 1.05; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+  #landing h1 { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: clamp(27px, 4.3875vw, 59.4px); line-height: 1.05; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
   #landing h1 .kw { background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  #landing .sub { margin: 0; font-size: clamp(16px, 1.6vw, 20px); color: var(--color-fg-muted); max-width: 52ch; }
   #landing .search { position: relative; width: min(100%, 760px); }
   #landing .shell { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 999px; background: rgba(255,255,255,.05); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); box-shadow: 0 0 48px rgba(86,225,232,.22), 0 0 96px rgba(92,88,237,.28); }
   #landing .shell::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: var(--border-neon); pointer-events: none; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
@@ -211,7 +210,6 @@
 <section id="landing" aria-label="Buscar una marca">
   <p class="eyebrow">Digital Predict · Performance</p>
   <h1>Descubre cuánto invierte tu <span class="kw">marca</span> en digital</h1>
-  <p class="sub">Escribe una marca y compárala con su competencia. Todos los canales, una sola vista.</p>
   <form class="search" id="lp-form" role="search" autocomplete="off">
     <div class="shell">
       <label class="field">
