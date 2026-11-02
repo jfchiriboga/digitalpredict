@@ -85,6 +85,13 @@ module.exports = async function handler(req, res) {
       if (!/^20\d{2}-[01]\d-[0-3]\d$/.test(desde)) return fail(400, 'desde inválido');
       if (hasta && (!/^20\d{2}-[01]\d-[0-3]\d$/.test(hasta) || hasta < desde)) return fail(400, 'hasta inválido');
       if (plataformas.some((x) => !PLATAFORMAS.includes(x))) return fail(400, 'plataforma inválida');
+      // Marcas de otras categorías para comparar: lista JSON de nombres (máx. 10).
+      let extras = [];
+      if (q.extras) {
+        try { extras = JSON.parse(String(q.extras)); } catch { return fail(400, 'extras inválido'); }
+        if (!Array.isArray(extras) || extras.length > 10 || extras.some((x) => typeof x !== 'string' || !x || x.length > 120)) return fail(400, 'extras inválido');
+        extras = [...new Set(extras)];
+      }
 
       const filters = [['categorias', 'eq', categoria]];
       if (plataformas.length === 1) filters.push('and', ['plataformas', 'eq', plataformas[0]]);
@@ -101,7 +108,25 @@ module.exports = async function handler(req, res) {
         if (!pi.has(r.plataformas)) { pi.set(r.plataformas, plats.length); plats.push(r.plataformas); }
         out.push([String(r.fecha).slice(0, 10), mi.get(r.marcas), pi.get(r.plataformas), num(r.digital_predict), num(r.timesfm)]);
       }
-      return res.status(200).json({ categoria, m: marcas, p: plats, r: out });
+      // Marcas de otras categorías: una consulta por marca (solo las que no vinieron ya con la categoría).
+      const ex = [], mc = {};
+      const faltan = extras.filter((n) => !mi.has(n));
+      const extraRows = await Promise.all(faltan.map((n) => {
+        const f = [['marcas', 'eq', n]];
+        if (plataformas.length === 1) f.push('and', ['plataformas', 'eq', plataformas[0]]);
+        return windsor({ fields: SERIE_FIELDS, from: desde, to: hasta || isoDay(today), filters: f });
+      }));
+      faltan.forEach((n, i) => {
+        for (const r of extraRows[i]) {
+          const d = String(r.fecha).slice(0, 10);
+          if (r.marcas !== n || d < desde || (hasta && d > hasta)) continue;
+          if (plataformas.length && !plataformas.includes(r.plataformas)) continue;
+          if (!mi.has(n)) { mi.set(n, marcas.length); marcas.push(n); ex.push(n); mc[n] = r.categorias; }
+          if (!pi.has(r.plataformas)) { pi.set(r.plataformas, plats.length); plats.push(r.plataformas); }
+          out.push([d, mi.get(n), pi.get(r.plataformas), num(r.digital_predict), num(r.timesfm)]);
+        }
+      });
+      return res.status(200).json(ex.length ? { categoria, m: marcas, p: plats, r: out, ex, mc } : { categoria, m: marcas, p: plats, r: out });
     }
 
     return fail(400, 'tipo inválido');

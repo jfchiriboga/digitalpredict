@@ -96,6 +96,7 @@
   .ci .plats { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .ci .plbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
   .ci .plats .chips { max-height: none; min-height: 0; }
+  .ci .chip .ccat { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--color-fg-muted); }
   .ci .chip.is-main { border-style: dashed; cursor: default; }
   .ci .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .ci .kpis { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
@@ -277,10 +278,13 @@
     </div>
     <div>
       <h2>Competidores</h2>
-      <p class="note">Marcas de la misma categoría, ordenadas por inversión estimada. Toca una para sumarla o quitarla de la comparación.</p>
+      <p class="note">Marcas de la misma categoría, ordenadas por inversión estimada. Toca una para sumarla o quitarla de la comparación. Escribe un nombre para añadir también marcas de otras categorías.</p>
     </div>
     <div class="tools">
-      <input id="f-buscar" type="search" placeholder="Buscar marca" aria-label="Buscar marca">
+      <div class="mk-wrap bs-wrap">
+        <input id="f-buscar" type="search" placeholder="Buscar marca (cualquier categoría)" aria-label="Buscar marca" autocomplete="off">
+        <ul class="mk-list" id="f-buscar-list" role="listbox" aria-label="Marcas de otras categorías" hidden></ul>
+      </div>
       <button id="f-top" type="button">Sugeridos (top 4)</button>
       <button id="f-ninguno" type="button">Quitar todos</button>
     </div>
@@ -383,12 +387,13 @@
       const g = dash.data('marcas_cat');
       if (g.status !== 'ok' || !g.data.length) return null;
       const rows = g.data, by = new Map(rows.map((r) => [r.marca, r]));
+      const enCat = rows.filter((r) => !r.externa), ext = rows.filter((r) => r.externa); // ext: marcas de otras categorías
       const p = dash.params();
-      const marca = by.has(p.marca) ? p.marca : rows[0].marca;
+      const marca = by.has(p.marca) ? p.marca : (enCat[0] || rows[0]).marca;
       const comps = Array.isArray(p.competidores)
         ? p.competidores.filter((n) => by.has(n) && n !== marca)
-        : rows.filter((r) => r.marca !== marca).slice(0, 4).map((r) => r.marca);
-      return { rows, by, marca, comps, list: [marca, ...comps], categoria: p.categoria, plataforma: String(p.plataforma || '').split(',').filter(Boolean).map((x) => (x === 'Programatic' ? 'Programática' : x)).join(', ') };
+        : [...enCat.filter((r) => r.marca !== marca).slice(0, 4), ...ext.filter((r) => r.marca !== marca)].map((r) => r.marca);
+      return { rows, enCat, ext, by, marca, comps, list: [marca, ...comps], categoria: p.categoria, plataforma: String(p.plataforma || '').split(',').filter(Boolean).map((x) => (x === 'Programatic' ? 'Programática' : x)).join(', ') };
     },
     idle(el, g) {
       el.replaceChildren();
@@ -458,9 +463,9 @@
       let total = 0;
       for (const r of serie) {
         let o = m.get(r.marcas);
-        if (!o) { o = { marca: r.marcas, total: 0, total_tfm: 0, err: 0, ult28: 0, prev28: 0, google: 0, meta: 0, tiktok: 0, youtube: 0, programatic: 0, x: 0 }; m.set(r.marcas, o); }
+        if (!o) { o = { marca: r.marcas, categoria: r.categorias, externa: !!r.externa, total: 0, total_tfm: 0, err: 0, ult28: 0, prev28: 0, google: 0, meta: 0, tiktok: 0, youtube: 0, programatic: 0, x: 0 }; m.set(r.marcas, o); }
         const v = num(r.digital_predict);
-        o.total += v; total += v; o.total_tfm += num(r.timesfm);
+        o.total += v; if (!r.externa) total += v; o.total_tfm += num(r.timesfm);
         const dk = r.marcas + '|' + r.fecha;
         let dd = days.get(dk);
         if (!dd) { dd = { m: r.marcas, p: 0, t: 0 }; days.set(dk, dd); }
@@ -469,11 +474,14 @@
         const k = key[r.plataformas]; if (k) o[k] += v;
       }
       for (const dd of days.values()) m.get(dd.m).err += Math.abs(dd.t - dd.p);
-      return [...m.values()].sort((a, b) => b.total - a.total).map((o, i) => {
+      // Las marcas de otras categorías (externa) se comparan, pero no entran en cuota ni en posición.
+      const fin = (o, i) => {
         let top = 'google';
         for (const k of Object.keys(label)) if (o[k] > o[top]) top = k;
-        return { ...o, rank: i + 1, cuota: total ? o.total / total : 0, dif_tfm: o.total ? o.total_tfm / o.total - 1 : null, wape: o.total ? o.err / o.total : null, var28: o.prev28 ? o.ult28 / o.prev28 - 1 : null, plataforma_top: o.total ? label[top] : '—' };
-      });
+        return { ...o, rank: o.externa ? null : i + 1, cuota: o.externa ? null : total ? o.total / total : 0, dif_tfm: o.total ? o.total_tfm / o.total - 1 : null, wape: o.total ? o.err / o.total : null, var28: o.prev28 ? o.ult28 / o.prev28 - 1 : null, plataforma_top: o.total ? label[top] : '—' };
+      };
+      const all = [...m.values()].sort((a, b) => b.total - a.total);
+      return [...all.filter((o) => !o.externa).map(fin), ...all.filter((o) => o.externa).map(fin)];
     },
   });
 
@@ -518,7 +526,7 @@
     const b = ev.target.closest('.pchip'); if (!b) return;
     const p = b.dataset.plat, sel = platSel();
     const next = !p ? [] : sel.includes(p) ? sel.filter((x) => x !== p) : [...sel, p];
-    dash.setParams({ plataforma: next.join(','), marca: null, competidores: null });
+    dash.setParams({ plataforma: next.join(',') }); // se conservan marca, competidores y marcas de otras categorías
   });
   const hoyIso0 = () => { const n = new Date(); return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())).toISOString().slice(0, 10); };
   const hasta = $('f-hasta');
@@ -535,16 +543,20 @@
   desde.addEventListener('blur', showDesde);
   hasta.addEventListener('blur', showDesde);
   $('f-top').addEventListener('click', () => dash.setParams({ competidores: null }));
-  $('f-ninguno').addEventListener('click', () => dash.setParams({ competidores: [] }));
+  $('f-ninguno').addEventListener('click', () => dash.setParams({ competidores: [], extras: [] }));
   const applySearch = () => {
     const q = buscar.value.trim().toLowerCase();
-    for (const c of document.querySelectorAll('.ci .chip')) c.hidden = !!q && !c.dataset.name.toLowerCase().includes(q);
+    for (const c of document.querySelectorAll('[data-draw="chips"] .chip')) c.hidden = !!q && !c.dataset.name.toLowerCase().includes(q);
   };
   buscar.addEventListener('input', applySearch);
   document.querySelector('[data-draw="chips"]').addEventListener('click', (ev) => {
     const b = ev.target.closest('.chip'); if (!b || b.classList.contains('is-main')) return;
     const st = CMP.state(); if (!st) return;
     const n = b.dataset.name;
+    if (b.dataset.externa) { // una marca de otra categoría se quita del todo (también de la consulta)
+      dash.setParams({ extras: (dash.params().extras || []).filter((x) => x !== n), competidores: st.comps.filter((x) => x !== n) });
+      return;
+    }
     dash.setParams({ competidores: st.comps.includes(n) ? st.comps.filter((x) => x !== n) : [...st.comps, n] });
   });
 
@@ -629,18 +641,20 @@
     if (actual && !items.includes(actual)) items.unshift(actual);
     sel.replaceChildren(...items.map((c) => new Option(c, c)));
     sel.value = actual ?? '';
-    sel.onchange = () => dash.setParams({ categoria: sel.value, marca: null, competidores: null });
+    sel.onchange = () => dash.setParams({ categoria: sel.value, marca: null, competidores: null, extras: [] });
   });
   dash.draw('chips', (box) => {
     const st = CMP.state(); box.replaceChildren();
     if (!st) return;
-    for (const r of st.rows) {
+    for (const r of [...st.enCat, ...st.ext]) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.name = r.marca;
       const isMain = r.marca === st.marca, idx = st.comps.indexOf(r.marca);
       b.setAttribute('aria-pressed', String(isMain || idx >= 0));
       if (isMain) b.classList.add('is-main');
+      if (r.externa) { b.dataset.externa = '1'; b.title = 'Otra categoría: ' + r.categoria + '. Toca para quitarla'; }
       if (isMain || idx >= 0) { const d = document.createElement('span'); d.className = 'dot'; d.style.background = CMP.color(isMain ? 0 : idx + 1); b.appendChild(d); }
       b.appendChild(document.createTextNode(r.marca + (isMain ? ' (analizada)' : '')));
+      if (r.externa) { const c = document.createElement('small'); c.className = 'ccat'; c.textContent = r.categoria; b.appendChild(c); }
       box.appendChild(b);
     }
     applySearch();
@@ -654,7 +668,7 @@
   dash.draw('titular', (el) => {
     const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
     const r = st.by.get(st.marca);
-    let t = `${r.marca} concentra ${CMP.pct(r.cuota)} de la inversión digital estimada de ${st.categoria}${st.plataforma ? ' en ' + st.plataforma : ''} y ocupa el puesto ${r.rank} de ${st.rows.length}.`;
+    let t = `${r.marca} concentra ${CMP.pct(r.cuota)} de la inversión digital estimada de ${st.categoria}${st.plataforma ? ' en ' + st.plataforma : ''} y ocupa el puesto ${r.rank} de ${st.enCat.length}.`;
     if (st.comps.length) {
       const top = st.comps.map((n) => st.by.get(n)).sort((a, b) => b.total - a.total)[0];
       t += top.total > r.total ? ` Entre los competidores elegidos, ${top.marca} la supera por ${CMP.usd(top.total - r.total)}.` : ` Supera a todos los competidores elegidos.`;
@@ -671,7 +685,7 @@
   kpi('kpi_var', 'var28', CMP.signed);
   dash.draw('kpi_pos', (el) => {
     const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
-    el.textContent = `${st.by.get(st.marca).rank} de ${st.rows.length}`;
+    el.textContent = `${st.by.get(st.marca).rank} de ${st.enCat.length}`;
   });
   dash.draw('hasta', (el) => {
     const g = dash.data('serie'); if (g.status !== 'ok' || !g.data.length) { el.textContent = '—'; return; }
@@ -680,8 +694,9 @@
   });
   dash.draw('nota_cuota', (el) => {
     const st = CMP.state(); if (!st) { el.textContent = '—'; return; }
-    const rest = Math.max(0, 1 - st.list.reduce((s, n) => s + st.by.get(n).cuota, 0));
-    el.textContent = `Las marcas elegidas suman ${CMP.pct(1 - rest)}. El resto de la categoría, ${st.rows.length - st.list.length} marcas, suma ${CMP.pct(rest)}.`;
+    const dentro = st.list.filter((n) => !st.by.get(n).externa);
+    const rest = Math.max(0, 1 - dentro.reduce((s, n) => s + st.by.get(n).cuota, 0));
+    el.textContent = `Las marcas elegidas de la categoría suman ${CMP.pct(1 - rest)}. El resto, ${st.enCat.length - dentro.length} marcas, suma ${CMP.pct(rest)}.` + (dentro.length < st.list.length ? ' Las marcas de otras categorías no entran en la cuota.' : '');
   });
 })();
 </script>
@@ -822,8 +837,10 @@
     const st = CMP.state();
     if (!st) { CMP.idle(el, dash.data('marcas_cat')); return; }
     el.classList.remove('dash-skeleton'); el.replaceChildren();
-    const max = Math.max(...st.list.map((n) => st.by.get(n).cuota), 0.0001);
-    st.list.forEach((n, i) => {
+    const lista = st.list.filter((n) => !st.by.get(n).externa); // la cuota es de la categoría: sin marcas externas
+    const max = Math.max(...lista.map((n) => st.by.get(n).cuota), 0.0001);
+    lista.forEach((n) => {
+      const i = st.list.indexOf(n);
       const r = st.by.get(n);
       const row = document.createElement('div'); row.className = 'brow';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = n; nm.style.fontWeight = i === 0 ? '600' : '400';
@@ -832,7 +849,7 @@
       tr.appendChild(f);
       const v = document.createElement('span'); v.className = 'num'; v.textContent = CMP.pct(r.cuota);
       row.append(nm, tr, v);
-      row.addEventListener('pointermove', (ev) => CMP.showTip(el, n, [[CMP.color(i), 'Inversión estimada', CMP.usd(r.total)], [null, 'Cuota', CMP.pct(r.cuota)], [null, 'Posición', r.rank + ' de ' + st.rows.length]], ev));
+      row.addEventListener('pointermove', (ev) => CMP.showTip(el, n, [[CMP.color(i), 'Inversión estimada', CMP.usd(r.total)], [null, 'Cuota', CMP.pct(r.cuota)], [null, 'Posición', r.rank + ' de ' + st.enCat.length]], ev));
       row.addEventListener('pointerleave', () => CMP.hideTip(el));
       el.appendChild(row);
     });
@@ -873,7 +890,7 @@
       const r = st.by.get(n);
       const tr = document.createElement('tr'); tr.dataset.key = r.marca;
       if (n === st.marca) tr.className = 'is-main';
-      for (const t of [r.marca, CMP.usd(r.total), CMP.pct(r.cuota), CMP.usd(r.ult28), CMP.signed(r.var28), CMP.usd(r.total_tfm), CMP.signed(r.dif_tfm), CMP.pct(r.wape), r.plataforma_top]) {
+      for (const t of [r.marca + (r.externa ? ' (' + r.categoria + ')' : ''), CMP.usd(r.total), CMP.pct(r.cuota), CMP.usd(r.ult28), CMP.signed(r.var28), CMP.usd(r.total_tfm), CMP.signed(r.dif_tfm), CMP.pct(r.wape), r.plataforma_top]) {
         const td = document.createElement('td'); td.textContent = t; tr.appendChild(td);
       }
       tb.appendChild(tr);
@@ -998,15 +1015,16 @@
   }
   function mkElegir(r) {
     mkCerrar(); mk.value = r.marca;
-    dash.setParams({ categoria: r.categoria, marca: r.marca, competidores: null }); // la categoría se completa con la de la marca
+    dash.setParams({ categoria: r.categoria, marca: r.marca, competidores: null, extras: [] }); // la categoría se completa con la de la marca
     mk.blur();
   }
   // Dos formas de elegir: escribir para filtrar o abrir la lista completa (sin escribir).
   let mkTecleo = false;
   function mkListaCompleta() {
     const g = dash.data('marcas'); if (g.status !== 'ok') return [];
-    const st = CMP.state(), cat = st ? st.categoria : '';
-    return g.data.slice().sort((a, b) => (a.categoria === cat ? 0 : 1) - (b.categoria === cat ? 0 : 1) || a.marca.localeCompare(b.marca, 'es')).slice(0, 400).map((r) => ({ r }));
+    // Sin escribir: solo las marcas de la categoría elegida. Escribiendo se busca en todas las categorías.
+    const cat = dash.params().categoria;
+    return g.data.filter((r) => r.categoria === cat).sort((a, b) => a.marca.localeCompare(b.marca, 'es')).map((r) => ({ r }));
   }
   function mkPintar() {
     mkShown = mkTecleo && norm(mk.value) ? buscar(mk.value, 30) : mkListaCompleta();
@@ -1031,6 +1049,36 @@
     mkList.hidden = false; mk.setAttribute('aria-expanded', 'true'); mkActive = -1;
     const cur = mkList.querySelector('[data-cur]'); if (cur) cur.scrollIntoView({ block: 'center' });
   }
+  // Competidores de otras categorías: se escribe y se añaden a la comparación.
+  const bs = $('f-buscar'), bsList = $('f-buscar-list');
+  const bsCerrar = () => { bsList.hidden = true; };
+  function bsPintar() {
+    const st = CMP.state(), cat = dash.params().categoria;
+    const ya = new Set(st ? st.rows.map((r) => r.marca) : []);
+    const res = norm(bs.value) ? buscar(bs.value, 60).filter(({ r }) => r.categoria !== cat && !ya.has(r.marca)).slice(0, 8) : [];
+    bsList.replaceChildren();
+    if (!res.length) return bsCerrar();
+    res.forEach(({ r }) => {
+      const li = document.createElement('li'); li.className = 'mk-opt'; li.setAttribute('role', 'option');
+      const nm = document.createElement('span'); resaltar(nm, r.marca, bs.value);
+      const ct = document.createElement('span'); ct.className = 'cat'; ct.textContent = r.categoria;
+      li.append(nm, ct);
+      li.addEventListener('pointerdown', (ev) => {
+        ev.preventDefault();
+        const ex = dash.params().extras || [];
+        if (ex.length >= 10) return;
+        dash.setParams({ extras: [...ex, r.marca], competidores: [...(st ? st.comps : []), r.marca] });
+        bs.value = ''; bsCerrar();
+      });
+      bsList.append(li);
+    });
+    bsList.hidden = false;
+  }
+  bs.addEventListener('input', bsPintar);
+  bs.addEventListener('focus', bsPintar);
+  bs.addEventListener('blur', bsCerrar);
+  bs.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') bsCerrar(); });
+
   dash.draw('sel_marca', (el) => { if (el !== document.activeElement) mkRestaurar(); });
   mk.addEventListener('focus', () => { mkTecleo = false; mk.select(); mkPintar(); });
   // Antes de escribir, un clic siempre selecciona todo el texto (no coloca el cursor) y abre la lista.
