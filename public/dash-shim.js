@@ -9,7 +9,7 @@
     return d < '2026-01-01' ? '2026-01-01' : d;
   }
   var DEFAULTS = { categoria: 'BANCOS', desde: desdeDefecto(), hasta: '', plataforma: '', ver: 'inicio' };
-  var JSON_KEYS = { marca: 1, competidores: 1 };
+  var JSON_KEYS = { marca: 1, competidores: 1, extras: 1 };
   var params = Object.assign({}, DEFAULTS);
   var listeners = [], draws = new Map(), calcs = new Map(), scheduled = false;
 
@@ -25,7 +25,7 @@
     var u = new URLSearchParams();
     Object.keys(params).forEach(function (k) {
       var v = params[k];
-      if (v == null || v === DEFAULTS[k]) return;
+      if (v == null || v === DEFAULTS[k] || (Array.isArray(v) && !v.length && k === 'extras')) return;
       u.set(k, JSON_KEYS[k] ? JSON.stringify(v) : v);
     });
     var s = u.toString();
@@ -48,11 +48,12 @@
     },
     serie: {
       enabled: function () { return params.ver === 'analisis'; },
-      key: function () { return [params.categoria, params.desde, params.hasta || '', params.plataforma || ''].join('|'); },
-      url: function () { return '/api/data?' + qs({ tipo: 'serie', categoria: params.categoria || '', desde: params.desde || '', hasta: params.hasta || '', plataforma: params.plataforma || '' }); },
+      key: function () { return [params.categoria, params.desde, params.hasta || '', params.plataforma || '', JSON.stringify(params.extras || [])].join('|'); },
+      url: function () { return '/api/data?' + qs({ tipo: 'serie', categoria: params.categoria || '', desde: params.desde || '', hasta: params.hasta || '', plataforma: params.plataforma || '', extras: (params.extras && params.extras.length) ? JSON.stringify(params.extras) : '' }); },
       parse: function (j) {
         return j.r.map(function (r) {
-          return { fecha: r[0], categorias: j.categoria, marcas: j.m[r[1]], plataformas: j.p[r[2]], digital_predict: r[3], timesfm: r[4] };
+          var m = j.m[r[1]], ext = !!(j.mc && j.mc[m]);
+          return { fecha: r[0], categorias: ext ? j.mc[m] : j.categoria, externa: ext, marcas: m, plataformas: j.p[r[2]], digital_predict: r[3], timesfm: r[4] };
         });
       },
     },

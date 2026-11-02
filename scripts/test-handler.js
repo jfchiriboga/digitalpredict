@@ -80,6 +80,12 @@ const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, '')
   assert.strictEqual(hh.code, 200); assert.strictEqual(hh.body.r.length, 1); assert.strictEqual(hh.body.r[0][0], '2026-09-01');
   assert.strictEqual((await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-09-01', hasta: '2026-08-01' }, ck)).code, 400);
   assert.strictEqual((await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-09-01', hasta: 'x' }, ck)).code, 400);
+  const xt = await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', extras: JSON.stringify(['C', 'A']) }, ck);
+  assert.strictEqual(xt.code, 200); assert.deepStrictEqual(xt.body.ex, ['C']); assert.deepStrictEqual(xt.body.mc, { C: 'OTRA' });
+  assert.ok(xt.body.m.includes('C') && xt.body.r.some((r) => xt.body.m[r[1]] === 'C'));
+  assert.strictEqual((await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', extras: 'no-json' }, ck)).code, 400);
+  assert.strictEqual((await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', extras: JSON.stringify(Array(11).fill('x')) }, ck)).code, 400);
+  assert.strictEqual(s.body.ex, undefined);
   const mm = await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', plataforma: 'Meta,TikTok' }, ck);
   assert.deepStrictEqual(mm.body.r.map((r) => mm.body.m[r[1]]).sort(), ['A', 'B']);
   assert.strictEqual((await callData({ tipo: 'serie', categoria: 'BANCOS', desde: '2026-10-01', plataforma: 'Meta,Radio' }, ck)).code, 400);
