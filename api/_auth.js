@@ -5,7 +5,7 @@
 const crypto = require('crypto');
 
 const COOKIE = 'dp_session';
-const TTL_SECONDS = 8 * 60 * 60;
+const TTL_SECONDS = 72 * 60 * 60;
 
 const sha = (s) => crypto.createHash('sha256').update(String(s)).digest();
 const hmac = (key, data) => crypto.createHmac('sha256', key).update(data).digest('base64url');

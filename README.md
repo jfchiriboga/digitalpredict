@@ -65,7 +65,7 @@ Para forzar la actualización, borra la clave `dp:indice:v1` desde la consola de
 ### Cómo se protege
 
 - La clave de Windsor queda en el servidor. La función solo acepta parámetros validados (`tipo`, `categoria`, `desde`, `plataforma`) y arma ella misma la consulta; no reenvía consultas arbitrarias.
-- La página pide una contraseña compartida al abrir. El navegador la envía una sola vez a `POST /api/login` (cuerpo JSON, admite cualquier carácter) y el servidor la compara con `DASHBOARD_PASSWORD`. Si coincide, responde con la cookie `dp_session` (HttpOnly, SameSite=Strict, Secure en HTTPS, 8 horas) firmada con HMAC.
+- La página pide una contraseña compartida al abrir. El navegador la envía una sola vez a `POST /api/login` (cuerpo JSON, admite cualquier carácter) y el servidor la compara con `DASHBOARD_PASSWORD`. Si coincide, responde con la cookie `dp_session` (HttpOnly, SameSite=Strict, Secure en HTTPS, 72 horas) firmada con HMAC.
 - `/api/data` exige esa cookie: sin ella responde 401. Si falta `DASHBOARD_PASSWORD` responde 500 con un mensaje explícito.
 - Cambiar `DASHBOARD_PASSWORD` cierra todas las sesiones abiertas. `SESSION_SECRET` es opcional y se mezcla en la firma.
 - `DELETE /api/login` borra la cookie (cerrar sesión).
