@@ -203,6 +203,20 @@
   .ci #filtros .ctl label, .ci #filtros .dr-lbl, .ci #filtros .plbl { font-size: calc(var(--cds-font-size-caption) * .9); }
   .ci #filtros .ctl select, .ci #filtros #f-marca, .ci #filtros .dr-btn { font-size: calc(var(--cds-font-size-body) * .9); }
   .ci #filtros .plats .chip { font-size: calc(var(--cds-font-size-caption) * .9); }
+  /* Aviso de carga: «Procesando modelo…» mientras llegan los datos */
+  .ci .procesando { position: sticky; top: 12px; z-index: 40; display: flex; align-items: center; gap: 14px; width: fit-content; max-width: 100%; margin: 0 auto 12px; padding: 12px 22px 12px 16px; border-radius: 999px; background: rgba(10,25,68,.92); -webkit-backdrop-filter: blur(20px) saturate(140%); backdrop-filter: blur(20px) saturate(140%); border: 1px solid var(--misiva-mint); box-shadow: var(--glow-mint-soft); animation: pr-in .25s ease .25s both; }
+  .ci .procesando[hidden] { display: none; }
+  .ci .pr-ring { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(86,225,232,.25); border-top-color: var(--misiva-mint); animation: pr-spin .8s linear infinite; }
+  .ci .pr-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .ci .pr-txt b { font-size: var(--cds-font-size-body); font-weight: 600; color: var(--color-fg); }
+  .ci .pr-txt small { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ci .pr-dots i { font-style: normal; animation: pr-dot 1.2s infinite both; }
+  .ci .pr-dots i:nth-child(2) { animation-delay: .2s; }
+  .ci .pr-dots i:nth-child(3) { animation-delay: .4s; }
+  @keyframes pr-spin { to { transform: rotate(360deg); } }
+  @keyframes pr-dot { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+  @keyframes pr-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .ci .pr-ring { animation-duration: 2.4s; } .ci .pr-dots i { animation: none; } }
 </style>
 <script src="/vendor/d3.min.js"></script>
 <script src="/dash-shim.js"></script>
@@ -227,6 +241,10 @@
   <p class="hashtag">#MakeItMisiva</p>
 </section>
 <div class="ci" hidden>
+  <div class="procesando" id="procesando" data-draw="procesando" data-source="serie" role="status" aria-live="polite" hidden>
+    <span class="pr-ring" aria-hidden="true"></span>
+    <span class="pr-txt"><b>Procesando modelo<span class="pr-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></b><small>Calculando inversión, cuota y pronóstico. Puede tardar unos segundos.</small></span>
+  </div>
   <header id="inicio">
     <p class="eyebrow">Digital Predict · Performance</p>
     <h1>Modelo AI de <span class="kw">Inversión Digital</span></h1>
@@ -282,7 +300,7 @@
     </div>
     <div class="tools">
       <div class="mk-wrap bs-wrap">
-        <input id="f-buscar" type="search" placeholder="Buscar marca (cualquier categoría)" aria-label="Buscar marca" autocomplete="off">
+        <input id="f-buscar" type="search" placeholder="Buscar o añadir marca" aria-label="Buscar marca" autocomplete="off">
         <ul class="mk-list" id="f-buscar-list" role="listbox" aria-label="Marcas de otras categorías" hidden></ul>
       </div>
       <button id="f-top" type="button">Sugeridos (top 4)</button>
@@ -634,6 +652,7 @@
   drPintar();
   dash.onData(() => { if (desde !== document.activeElement && hasta !== document.activeElement) showDesde(); showPlat(); });
 
+  dash.draw('procesando', (el) => { el.hidden = dash.data('serie').status !== 'loading'; });
   dash.draw('sel_cat', (sel) => {
     const g = dash.data('categorias_lista');
     const actual = dash.params().categoria;
