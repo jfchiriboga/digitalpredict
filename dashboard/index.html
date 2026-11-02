@@ -34,6 +34,7 @@
   #dash-root { --dash-gutter: clamp(12px, 3vw, 32px); }
   .ci { max-width: 1180px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
   .ci h1 { font-family: var(--font-anthropic-serif); font-weight: 700; font-size: var(--cds-font-size-title); line-height: 1.05; letter-spacing: -.02em; margin: 0; }
+  .ci .dp-mark { width: 40px; height: 40px; display: block; margin: 0 0 14px; filter: drop-shadow(0 0 14px rgba(86,225,232,.35)); }
   .ci .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--misiva-mint); margin: 0 0 12px; }
   .ci h1 .kw { background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .ci h2 { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); font-weight: 600; letter-spacing: -.01em; margin: 0; }
@@ -99,6 +100,7 @@
 
 <div class="ci">
   <header id="inicio">
+    <svg class="dp-mark " viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs><linearGradient id="dpg-h" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#56E1E8"/><stop offset=".5" stop-color="#3FA9F5"/><stop offset="1" stop-color="#5C58ED"/></linearGradient></defs><rect width="64" height="64" rx="32" fill="url(#dpg-h)"/><circle cx="32" cy="32" r="19" fill="none" stroke="#050817" stroke-width="6" stroke-linecap="round" stroke-dasharray="90 30" transform="rotate(-60 32 32)"/><circle cx="32" cy="32" r="6.5" fill="#050817"/><circle cx="27.1" cy="13.6" r="4.5" fill="#fff"/></svg>
     <p class="eyebrow">Digital Predict · Performance</p>
     <h1>Competencia de <span class="kw">inversión digital</span></h1>
     <p class="lead" data-draw="titular" data-source="marcas_cat">—</p>
