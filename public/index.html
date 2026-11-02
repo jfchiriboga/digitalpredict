@@ -988,7 +988,8 @@
   const mk = $('f-marca'), mkList = $('f-marca-list');
   let mkShown = [], mkActive = -1;
   const mkCerrar = () => { mkList.hidden = true; mk.setAttribute('aria-expanded', 'false'); mk.removeAttribute('aria-activedescendant'); mkActive = -1; };
-  const mkRestaurar = () => { const st = CMP.state(); mk.value = st ? st.marca : ''; };
+  // Mientras carga la categoría nueva no hay estado: se conserva la marca ya elegida en vez de vaciar el campo.
+  const mkRestaurar = () => { const st = CMP.state(); mk.value = st ? st.marca : (dash.params().marca || ''); };
   function mkMarcar(i) {
     mkActive = i;
     [...mkList.children].forEach((li, k) => li.setAttribute('aria-selected', String(k === i)));
