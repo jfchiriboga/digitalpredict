@@ -234,14 +234,14 @@
 
   <section class="card" id="filtros" aria-label="Filtros">
     <div class="ctl">
-      <label>Categoría
-        <select id="f-cat" data-draw="sel_cat" data-source="categorias_lista" aria-label="Categoría"></select>
-      </label>
       <label>Marca a analizar
         <div class="mk-wrap">
           <input id="f-marca" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f-marca-list" aria-label="Marca a analizar" placeholder="Escribe una marca" autocomplete="off" spellcheck="false" data-draw="sel_marca" data-source="marcas_cat">
           <ul class="mk-list" id="f-marca-list" role="listbox" aria-label="Marcas sugeridas" hidden></ul>
         </div>
+      </label>
+      <label>Categoría
+        <select id="f-cat" data-draw="sel_cat" data-source="categorias_lista" aria-label="Categoría"></select>
       </label>
       <div class="dr" id="dr">
         <span class="dr-lbl" id="dr-lbl">Periodo</span>
