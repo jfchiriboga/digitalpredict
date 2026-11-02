@@ -44,7 +44,7 @@ const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, '')
   // login correcto -> cookie HttpOnly firmada
   const ok = await callLogin('POST', { password: 'secreto' }, { 'x-forwarded-proto': 'https' });
   assert.strictEqual(ok.code, 200); assert.strictEqual(lastLog().evento, 'login_ok');
-  assert.match(ok.h['Set-Cookie'], /^dp_session=\d+\.[\w-]+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=28800; Secure$/);
+  assert.match(ok.h['Set-Cookie'], /^dp_session=\d+\.[\w-]+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=259200; Secure$/);
   const ck = cookieOf(ok);
   const cats = await callData({ tipo: 'cats' }, ck);
   assert.strictEqual(cats.code, 200); assert.deepStrictEqual(cats.body.cats, ['BANCOS', 'OTRA']);
@@ -53,7 +53,8 @@ const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, '')
   // cookie manipulada o vencida
   const [exp, sig] = ck.split('=')[1].split('.');
   assert.strictEqual((await callData({ tipo: 'cats' }, `dp_session=${Number(exp) + 1}.${sig}`)).code, 401);
-  assert.strictEqual(auth.tokenValid(auth.issueToken(Date.now() - 9 * 3600 * 1000)), false);
+  assert.strictEqual(auth.tokenValid(auth.issueToken(Date.now() - 73 * 3600 * 1000)), false);
+  assert.strictEqual(auth.tokenValid(auth.issueToken(Date.now() - 71 * 3600 * 1000)), true);
   assert.strictEqual(auth.tokenValid(auth.issueToken()), true);
 
   // la contraseña admite espacios sobrantes en la variable y caracteres fuera de Latin-1
