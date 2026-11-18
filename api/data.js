@@ -45,7 +45,10 @@ function buildPairs(rows) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Cache-Control', 'private, max-age=300');
+  // Solo las respuestas correctas se pueden guardar en el navegador. Los errores (401, 400, 500, 502) nunca:
+  // si el navegador guardara un 401, tras iniciar sesión seguiría mostrando "sin sesión" durante 5 minutos.
+  res.setHeader('Cache-Control', 'no-store');
+  const ok = (body) => { res.setHeader('Cache-Control', 'private, max-age=300'); return res.status(200).json(body); };
   const fail = (code, error) => res.status(code).json({ error });
   try {
     if (!auth.password()) { auth.logEvent(req, 'data_falta_variable', { variable: 'DASHBOARD_PASSWORD' }); return fail(500, 'Falta la variable DASHBOARD_PASSWORD en el servidor.'); }
@@ -71,9 +74,9 @@ module.exports = async function handler(req, res) {
           console.warn('[cache] Windsor falló, se sirve el índice anterior:', e.message);
         }
       }
-      if (q.tipo === 'marcas') return res.status(200).json({ marcas: pairs });
+      if (q.tipo === 'marcas') return ok({ marcas: pairs });
       const cats = [...new Set(pairs.map((p) => p[1]))].sort((a, b) => a.localeCompare(b, 'es'));
-      return res.status(200).json({ cats });
+      return ok({ cats });
     }
 
     if (q.tipo === 'serie') {
@@ -126,7 +129,7 @@ module.exports = async function handler(req, res) {
           out.push([d, mi.get(n), pi.get(r.plataformas), num(r.digital_predict), num(r.timesfm)]);
         }
       });
-      return res.status(200).json(ex.length ? { categoria, m: marcas, p: plats, r: out, ex, mc } : { categoria, m: marcas, p: plats, r: out });
+      return ok(ex.length ? { categoria, m: marcas, p: plats, r: out, ex, mc } : { categoria, m: marcas, p: plats, r: out });
     }
 
     return fail(400, 'tipo inválido');

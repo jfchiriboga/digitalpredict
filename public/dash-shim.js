@@ -66,7 +66,8 @@
     if (s.enabled && !s.enabled()) return;
     if (st.key === k) return;
     st.key = k; st.status = 'loading'; st.data = []; st.message = '';
-    fetch(s.url())
+    var opts = st.fresh ? { cache: 'reload' } : undefined; st.fresh = false;   // tras iniciar sesión, ignora respuestas guardadas
+    fetch(s.url(), opts)
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
       .then(function (x) {
         if (st.key !== k) return;
@@ -118,7 +119,7 @@
     setParams: setParams,
     resetParams: function () { params = Object.assign({}, DEFAULTS); writeUrl(); loadAll(); schedule(); },
     refresh: function () { Object.keys(SOURCES).forEach(function (id) { state[id].key = null; }); loadAll(); },
-    retry: function () { Object.keys(SOURCES).forEach(function (id) { if (state[id].status === 'error') state[id].key = null; }); loadAll(); schedule(); },
+    retry: function () { Object.keys(SOURCES).forEach(function (id) { if (state[id].status === 'error') { state[id].key = null; state[id].fresh = true; } }); loadAll(); schedule(); },
     start: function () {
       var root = document.getElementById('dash-root'), w = root.clientWidth, t;
       new ResizeObserver(function () {
