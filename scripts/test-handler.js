@@ -30,6 +30,7 @@ const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, '')
   // sin sesión
   assert.strictEqual((await callData({ tipo: 'cats' })).code, 401);
   assert.strictEqual(lastLog().evento, 'data_sin_sesion'); assert.strictEqual(lastLog().motivo, 'sin_cookie');
+  { const r = await callData({ tipo: 'cats' }); assert.strictEqual(r.h['Cache-Control'], 'no-store'); }   // los errores nunca se guardan en el navegador
   assert.strictEqual((await callData({ tipo: 'cats' }, 'dp_session=basura')).code, 401);
   assert.strictEqual(lastLog().motivo, 'cookie_invalida');
 
@@ -44,7 +45,7 @@ const lastLog = () => JSON.parse(logs[logs.length - 1].replace(/^\[auth\] /, '')
   // login correcto -> cookie HttpOnly firmada
   const ok = await callLogin('POST', { password: 'secreto' }, { 'x-forwarded-proto': 'https' });
   assert.strictEqual(ok.code, 200); assert.strictEqual(lastLog().evento, 'login_ok');
-  assert.match(ok.h['Set-Cookie'], /^dp_session=\d+\.[\w-]+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=259200; Secure$/);
+  assert.match(ok.h['Set-Cookie'], /^dp_session=\d+\.[\w-]+; Path=\/; HttpOnly; SameSite=Lax; Max-Age=259200; Secure$/);
   const ck = cookieOf(ok);
   const cats = await callData({ tipo: 'cats' }, ck);
   assert.strictEqual(cats.code, 200); assert.deepStrictEqual(cats.body.cats, ['BANCOS', 'OTRA']);

@@ -57,13 +57,16 @@ function logEvent(req, event, extra) {
     ip: String(h['x-forwarded-for'] || '').split(',')[0].trim() || undefined,
     ua: String(h['user-agent'] || '').slice(0, 80) || undefined,
     despliegue: process.env.VERCEL_DEPLOYMENT_ID || undefined,
+    // Diagnóstico de cookies: solo los NOMBRES, nunca los valores.
+    cookies: h.cookie ? String(h.cookie).split(';').map((c) => c.split('=')[0].trim()).filter(Boolean).slice(0, 10) : [],
+    sec_fetch_site: h['sec-fetch-site'] || undefined,
   }, extra);
   (/^(login_ok|logout)$/.test(event) ? console.log : console.warn)('[auth] ' + JSON.stringify(rec));
 }
 
 function sessionCookie(req, token, maxAge = TTL_SECONDS) {
   const secure = String((req.headers || {})['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
-  return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}` + (secure ? '; Secure' : '');
+  return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}` + (secure ? '; Secure' : '');
 }
 
 module.exports = { passwordMatches, issueToken, tokenValid, isAuthenticated, sessionState, logEvent, sessionCookie, password, TTL_SECONDS };
